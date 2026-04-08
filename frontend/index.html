@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XLayer Rebalancer — Live Portfolio</title>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0a0e14;
+  --surface: #12171f;
+  --surface2: #1a2030;
+  --border: #1e2a3a;
+  --text: #e4e8f0;
+  --text2: #8892a4;
+  --text3: #5a6478;
+  --accent: #3b82f6;
+  --accent2: #60a5fa;
+  --green: #10b981;
+  --green-bg: rgba(16,185,129,0.12);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245,158,11,0.12);
+  --red: #ef4444;
+  --red-bg: rgba(239,68,68,0.12);
+  --purple: #a78bfa;
+  --pink: #f472b6;
+  --cyan: #22d3ee;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  top: -200px; left: 50%;
+  transform: translateX(-50%);
+  width: 800px; height: 600px;
+  background: radial-gradient(ellipse, rgba(59,130,246,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Header */
+.header {
+  padding: 24px 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  position: relative; z-index: 1;
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.logo {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 18px; color: #fff;
+}
+.header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+.chain-badge {
+  font-size: 12px; color: var(--text2);
+  background: var(--surface2);
+  padding: 4px 10px; border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.header-right { display: flex; align-items: center; gap: 12px; }
+
+/* Wallet button */
+.btn-connect {
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  color: #fff; border: none;
+  padding: 10px 20px; border-radius: 10px;
+  font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.btn-connect:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(59,130,246,0.3); }
+.btn-connect:active { transform: translateY(0); }
+.btn-connect:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.wallet-info {
+  display: none; align-items: center; gap: 10px;
+}
+.wallet-info.connected { display: flex; }
+.wallet-addr {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 8px 14px; border-radius: 10px;
+  font-size: 13px; font-weight: 500;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: var(--accent2);
+}
+.btn-disconnect {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text2); padding: 8px 12px; border-radius: 8px;
+  font-size: 12px; cursor: pointer; transition: all 0.2s;
+}
+.btn-disconnect:hover { border-color: var(--red); color: var(--red); }
+
+/* Network banner */
+.network-alert {
+  display: none;
+  background: var(--amber-bg);
+  border: 1px solid rgba(245,158,11,0.3);
+  padding: 14px 32px;
+  text-align: center;
+  font-size: 14px; color: var(--amber);
+  z-index: 1; position: relative;
+}
+.network-alert.show { display: block; }
+.network-alert button {
+  background: var(--amber); color: #000;
+  border: none; padding: 6px 16px; border-radius: 6px;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; margin-left: 12px;
+}
+
+/* Status pills */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.status-pill .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.pill-live { background: var(--green-bg); color: var(--green); }
+.pill-live .dot { background: var(--green); }
+.pill-disconnected { background: var(--red-bg); color: var(--red); }
+.pill-disconnected .dot { background: var(--red); }
+
+/* Connect prompt overlay */
+.connect-prompt {
+  position: relative; z-index: 1;
+  max-width: 560px; margin: 80px auto;
+  text-align: center; padding: 48px 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.connect-prompt.hidden { display: none; }
+.connect-prompt .cp-icon {
+  width: 72px; height: 72px; margin: 0 auto 24px;
+  background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(167,139,250,0.15));
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+}
+.connect-prompt h2 {
+  font-size: 24px; font-weight: 700; margin-bottom: 12px;
+  letter-spacing: -0.3px;
+}
+.connect-prompt p {
+  color: var(--text2); font-size: 15px; line-height: 1.6;
+  margin-bottom: 28px; max-width: 420px; margin-left: auto; margin-right: auto;
+}
+.connect-prompt .btn-connect-hero {
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  color: #fff; border: none;
+  padding: 14px 36px; border-radius: 12px;
+  font-size: 16px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.connect-prompt .btn-connect-hero:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(59,130,246,0.3); }
+.cp-hint {
+  margin-top: 16px; font-size: 12px; color: var(--text3);
+}
+.cp-steps {
+  margin-top: 32px; text-align: left;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.cp-step {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.cp-step-num {
+  width: 24px; height: 24px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  margin-bottom: 8px;
+}
+.cp-step-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.cp-step-desc { font-size: 12px; color: var(--text3); line-height: 1.4; }
+
+@media (max-width: 600px) {
+  .cp-steps { grid-template-columns: 1fr; }
+}
+
+/* Main dashboard */
+.dashboard { position: relative; z-index: 1; }
+.dashboard.hidden { display: none; }
+.container {
+  max-width: 1200px; margin: 0 auto;
+  padding: 24px 32px; position: relative; z-index: 1;
+}
+.grid-top {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 16px; margin-bottom: 24px;
+}
+.grid-main {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 24px; margin-bottom: 24px;
+}
+@media (max-width: 900px) {
+  .grid-top { grid-template-columns: 1fr 1fr; }
+  .grid-main { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .grid-top { grid-template-columns: 1fr; }
+  .container { padding: 16px; }
+  .header { padding: 16px; flex-wrap: wrap; gap: 12px; }
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: rgba(59,130,246,0.3); }
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-size: 12px; font-weight: 600; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.8px;
+}
+
+/* Metric cards */
+.metric-card .metric-value {
+  font-size: 28px; font-weight: 700;
+  letter-spacing: -0.5px; line-height: 1.2;
+}
+.metric-card .metric-label {
+  font-size: 13px; color: var(--text2); margin-top: 4px;
+}
+.metric-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.icon-value { background: rgba(59,130,246,0.12); }
+.icon-gas { background: rgba(16,185,129,0.12); }
+.icon-tokens { background: rgba(168,139,250,0.12); }
+.icon-drift { background: rgba(245,158,11,0.12); }
+
+/* Donut chart */
+.chart-container {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.donut-wrap {
+  position: relative; width: 200px; height: 200px;
+  margin-bottom: 20px;
+}
+.donut-wrap canvas { display: block; }
+.donut-center {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.donut-center .dc-value { font-size: 22px; font-weight: 700; }
+.donut-center .dc-label { font-size: 11px; color: var(--text2); }
+.legend { width: 100%; }
+.legend-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.legend-item:last-child { border-bottom: none; }
+.legend-left { display: flex; align-items: center; gap: 8px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.legend-name { font-size: 13px; font-weight: 500; }
+.legend-right { text-align: right; }
+.legend-pct { font-size: 13px; font-weight: 600; }
+.legend-val { font-size: 11px; color: var(--text2); }
+
+/* Allocation bars */
+.alloc-row {
+  margin-bottom: 16px; padding: 14px 16px;
+  background: var(--surface2); border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.alloc-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.alloc-token {
+  font-size: 14px; font-weight: 600;
+  display: flex; align-items: center; gap: 8px;
+}
+.alloc-token-dot { width: 8px; height: 8px; border-radius: 2px; }
+.alloc-drift {
+  font-size: 13px; font-weight: 600;
+  padding: 2px 8px; border-radius: 4px;
+}
+.drift-ok { color: var(--green); background: var(--green-bg); }
+.drift-warn { color: var(--amber); background: var(--amber-bg); }
+.drift-bad { color: var(--red); background: var(--red-bg); }
+.alloc-bar {
+  height: 8px; background: #1a1f2e;
+  border-radius: 4px; position: relative; overflow: visible;
+}
+.alloc-bar-fill {
+  height: 100%; border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+}
+.alloc-bar-target {
+  position: absolute; top: -4px;
+  width: 2px; height: 16px;
+  background: var(--text2); border-radius: 1px;
+  transition: left 0.3s;
+}
+.alloc-bar-target::after {
+  content: attr(data-target);
+  position: absolute; top: -18px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px; color: var(--text3); white-space: nowrap;
+}
+.alloc-bottom {
+  display: flex; justify-content: space-between;
+  margin-top: 6px; font-size: 11px; color: var(--text3);
+}
+
+/* Token details table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 10px 12px; border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+td {
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(30,42,58,0.5);
+  color: var(--text);
+}
+tr:hover td { background: rgba(59,130,246,0.04); }
+.td-mono { font-family: 'SF Mono','Fira Code',monospace; font-size: 12px; }
+.td-green { color: var(--green); }
+.td-blue { color: var(--accent2); }
+.td-bold { font-weight: 600; }
+
+/* Live indicator */
+.live-indicator {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text3);
+}
+.live-indicator .li-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Loading spinner */
+.spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* How it works section */
+.how-it-works {
+  position: relative; z-index: 1;
+  max-width: 1200px; margin: 0 auto;
+  padding: 0 32px 24px;
+}
+.hiw-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+@media (max-width: 900px) { .hiw-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .hiw-grid { grid-template-columns: 1fr; } }
+.hiw-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+.hiw-num {
+  width: 32px; height: 32px; margin: 0 auto 12px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: #fff;
+}
+.hiw-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.hiw-desc { font-size: 12px; color: var(--text3); line-height: 1.5; }
+
+/* Toast notification */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 20px;
+  font-size: 13px;
+  display: flex; align-items: center; gap: 10px;
+  z-index: 100;
+  animation: slideUp 0.3s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  transition: opacity 0.3s;
+}
+.toast.hide { opacity: 0; }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.toast-success { border-color: rgba(16,185,129,0.4); }
+.toast-error { border-color: rgba(239,68,68,0.4); }
+
+/* Footer */
+.footer {
+  text-align: center; padding: 24px;
+  color: var(--text3); font-size: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  position: relative; z-index: 1;
+}
+.footer a { color: var(--accent2); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
+.fade-in { animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">XR</div>
+    <div><h1>XLayer Rebalancer</h1></div>
+    <span class="chain-badge">X Layer (196)</span>
+  </div>
+  <div class="header-right">
+    <div id="status-pill" class="status-pill pill-disconnected"><span class="dot"></span>Disconnected</div>
+    <button id="btn-connect" class="btn-connect" onclick="connectWallet()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M16 14h.01"/><path d="M2 10h20"/></svg>
+      Connect Wallet
+    </button>
+    <div id="wallet-info" class="wallet-info">
+      <span id="wallet-addr" class="wallet-addr"></span>
+      <button class="btn-disconnect" onclick="disconnectWallet()">Disconnect</button>
+    </div>
+  </div>
+</header>
+
+<!-- Network Alert -->
+<div id="network-alert" class="network-alert">
+  You're not connected to X Layer. Switch networks to view your portfolio.
+  <button onclick="switchToXLayer()">Switch to X Layer</button>
+</div>
+
+<!-- Connect Prompt (shown when not connected) -->
+<div id="connect-prompt" class="connect-prompt">
+  <div class="cp-icon">&#x1F517;</div>
+  <h2>Connect Your Wallet</h2>
+  <p>View your live portfolio allocation on X Layer and see how the autonomous rebalancer keeps your portfolio on target.</p>
+  <button class="btn-connect-hero" onclick="connectWallet()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M16 14h.01"/><path d="M2 10h20"/></svg>
+    Connect Wallet
+  </button>
+  <div class="cp-hint">Supports MetaMask, OKX Wallet, and other EVM wallets</div>
+  <div class="cp-steps">
+    <div class="cp-step">
+      <div class="cp-step-num">1</div>
+      <div class="cp-step-title">Connect</div>
+      <div class="cp-step-desc">Click the button above to connect your Web3 wallet</div>
+    </div>
+    <div class="cp-step">
+      <div class="cp-step-num">2</div>
+      <div class="cp-step-title">Switch Network</div>
+      <div class="cp-step-desc">Approve switching to X Layer (Chain ID 196)</div>
+    </div>
+    <div class="cp-step">
+      <div class="cp-step-num">3</div>
+      <div class="cp-step-title">View Portfolio</div>
+      <div class="cp-step-desc">See your live token balances and allocation drift</div>
+    </div>
+    <div class="cp-step">
+      <div class="cp-step-num">4</div>
+      <div class="cp-step-title">Auto Rebalance</div>
+      <div class="cp-step-desc">The agent monitors and rebalances when drift exceeds threshold</div>
+    </div>
+  </div>
+</div>
+
+<!-- Dashboard (hidden until connected) -->
+<div id="dashboard" class="dashboard hidden">
+  <div class="container">
+    <!-- Metric cards -->
+    <div class="grid-top">
+      <div class="card metric-card fade-in">
+        <div class="card-header">
+          <span class="card-title">Portfolio Value</span>
+          <div class="metric-icon icon-value">&#x1F4B0;</div>
+        </div>
+        <div class="metric-value" id="m-value">--</div>
+        <div class="metric-label" id="m-tokens">loading...</div>
+      </div>
+      <div class="card metric-card fade-in">
+        <div class="card-header">
+          <span class="card-title">Gas Balance (OKB)</span>
+          <div class="metric-icon icon-gas">&#x26FD;</div>
+        </div>
+        <div class="metric-value" id="m-gas">--</div>
+        <div class="metric-label">native OKB for tx fees</div>
+      </div>
+      <div class="card metric-card fade-in">
+        <div class="card-header">
+          <span class="card-title">Tokens Tracked</span>
+          <div class="metric-icon icon-tokens">&#x1F4CA;</div>
+        </div>
+        <div class="metric-value" id="m-count">--</div>
+        <div class="metric-label">in target portfolio</div>
+      </div>
+      <div class="card metric-card fade-in">
+        <div class="card-header">
+          <span class="card-title">Max Drift</span>
+          <div class="metric-icon icon-drift">&#x1F3AF;</div>
+        </div>
+        <div class="metric-value" id="m-drift">--</div>
+        <div class="metric-label" id="m-drift-label">connect to view</div>
+      </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="grid-main">
+      <!-- Donut Chart -->
+      <div class="card fade-in">
+        <div class="card-header">
+          <span class="card-title">Portfolio Allocation</span>
+        </div>
+        <div class="chart-container">
+          <div class="donut-wrap">
+            <canvas id="donut" width="200" height="200"></canvas>
+            <div class="donut-center">
+              <div class="dc-value" id="dc-value">--</div>
+              <div class="dc-label">Total Value</div>
+            </div>
+          </div>
+          <div class="legend" id="legend"></div>
+        </div>
+      </div>
+
+      <!-- Allocation Bars -->
+      <div class="card fade-in">
+        <div class="card-header">
+          <span class="card-title">Current vs Target</span>
+          <div class="live-indicator"><span class="li-dot"></span>Live</div>
+        </div>
+        <div id="alloc-bars"></div>
+      </div>
+    </div>
+
+    <!-- Token Details -->
+    <div class="card fade-in">
+      <div class="card-header">
+        <span class="card-title">Token Details</span>
+        <div class="live-indicator"><span class="li-dot"></span>Auto-refresh 30s</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Token</th>
+              <th>Contract</th>
+              <th>Balance</th>
+              <th>Price</th>
+              <th>Value</th>
+              <th>Current %</th>
+              <th>Target %</th>
+              <th>Drift</th>
+            </tr>
+          </thead>
+          <tbody id="token-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="how-it-works">
+    <div class="card" style="margin-bottom: 16px;">
+      <div class="card-header">
+        <span class="card-title">How It Works</span>
+      </div>
+    </div>
+    <div class="hiw-grid">
+      <div class="hiw-card">
+        <div class="hiw-num">1</div>
+        <div class="hiw-title">Set Targets</div>
+        <div class="hiw-desc">Define your ideal portfolio allocation (e.g. 60% OKB, 40% USDT)</div>
+      </div>
+      <div class="hiw-card">
+        <div class="hiw-num">2</div>
+        <div class="hiw-title">Monitor Drift</div>
+        <div class="hiw-desc">The agent checks balances and prices every 5 minutes on X Layer</div>
+      </div>
+      <div class="hiw-card">
+        <div class="hiw-num">3</div>
+        <div class="hiw-title">Auto Rebalance</div>
+        <div class="hiw-desc">When drift exceeds the threshold, swaps are executed via OnchainOS</div>
+      </div>
+      <div class="hiw-card">
+        <div class="hiw-num">4</div>
+        <div class="hiw-title">Stay Secure</div>
+        <div class="hiw-desc">Every token is security-scanned before trading - no honeypots</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  XLayer Rebalancer &middot; Built for <a href="https://web3.okx.com/xlayer/build-x-hackathon" target="_blank">OKX Build X Hackathon</a> &middot; Powered by <a href="https://web3.okx.com/onchainos" target="_blank">OnchainOS</a> on X Layer
+</footer>
+
+<script>
+// ---- Config ----------------------------------------------------------------
+const XLAYER_CHAIN_ID = 196;
+const XLAYER_RPC = 'https://rpc.xlayer.tech';
+const XLAYER_CHAIN = {
+  chainId: '0xC4',
+  chainName: 'X Layer',
+  nativeCurrency: { name: 'OKB', symbol: 'OKB', decimals: 18 },
+  rpcUrls: ['https://rpc.xlayer.tech'],
+  blockExplorerUrls: ['https://www.oklink.com/xlayer'],
+};
+
+const TOKENS = [
+  { addr: '0xe538905cf8410324e03a5a23c1c177a474d59b2b', label: 'OKB (WOKB)', symbol: 'OKB', target: 60, decimals: 18 },
+  { addr: '0x779ded0c9e1022225f8e0630b35a9b54be713736', label: 'USDT',       symbol: 'USDT', target: 40, decimals: 6 },
+];
+
+const ERC20_ABI = [
+  'function balanceOf(address owner) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+  'function symbol() view returns (string)',
+];
+
+const COLORS = ['#3b82f6','#10b981','#f59e0b','#a78bfa','#f472b6','#22d3ee'];
+const REFRESH_INTERVAL = 30000;
+
+// ---- State -----------------------------------------------------------------
+let userAddress = null;
+let browserProvider = null;
+let refreshTimer = null;
+
+// ---- Wallet ----------------------------------------------------------------
+async function connectWallet() {
+  if (!window.ethereum) {
+    showToast('No wallet detected. Please install MetaMask or OKX Wallet.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-connect');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Connecting...';
+
+  try {
+    browserProvider = new ethers.BrowserProvider(window.ethereum);
+    const accounts = await browserProvider.send('eth_requestAccounts', []);
+    userAddress = accounts[0];
+
+    // Check network
+    const network = await browserProvider.getNetwork();
+    if (Number(network.chainId) !== XLAYER_CHAIN_ID) {
+      await switchToXLayer();
+    }
+
+    updateWalletUI(true);
+    showToast('Wallet connected successfully!', 'success');
+    await refreshPortfolio();
+    startAutoRefresh();
+
+  } catch (err) {
+    console.error('Connect error:', err);
+    if (err.code === 4001) {
+      showToast('Connection rejected by user.', 'error');
+    } else {
+      showToast('Connection failed: ' + (err.shortMessage || err.message), 'error');
+    }
+    updateWalletUI(false);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M16 14h.01"/><path d="M2 10h20"/></svg> Connect Wallet';
+}
+
+async function switchToXLayer() {
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: XLAYER_CHAIN.chainId }],
+    });
+  } catch (err) {
+    if (err.code === 4902) {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [XLAYER_CHAIN],
+      });
+    } else {
+      throw err;
+    }
+  }
+  // Re-init provider after chain switch
+  browserProvider = new ethers.BrowserProvider(window.ethereum);
+}
+
+function disconnectWallet() {
+  userAddress = null;
+  browserProvider = null;
+  if (refreshTimer) clearInterval(refreshTimer);
+  updateWalletUI(false);
+  showToast('Wallet disconnected.', 'success');
+}
+
+function updateWalletUI(connected) {
+  const btn = document.getElementById('btn-connect');
+  const info = document.getElementById('wallet-info');
+  const pill = document.getElementById('status-pill');
+  const prompt = document.getElementById('connect-prompt');
+  const dash = document.getElementById('dashboard');
+  const alert = document.getElementById('network-alert');
+
+  if (connected && userAddress) {
+    btn.style.display = 'none';
+    info.classList.add('connected');
+    document.getElementById('wallet-addr').textContent =
+      userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
+    pill.className = 'status-pill pill-live';
+    pill.innerHTML = '<span class="dot"></span>Connected';
+    prompt.classList.add('hidden');
+    dash.classList.remove('hidden');
+    alert.classList.remove('show');
+  } else {
+    btn.style.display = 'flex';
+    info.classList.remove('connected');
+    pill.className = 'status-pill pill-disconnected';
+    pill.innerHTML = '<span class="dot"></span>Disconnected';
+    prompt.classList.remove('hidden');
+    dash.classList.add('hidden');
+    alert.classList.remove('show');
+  }
+}
+
+// ---- Data fetching ---------------------------------------------------------
+async function fetchPrices() {
+  // Try API route first (Vercel deployment), then CoinGecko direct, then fallback
+  const sources = [
+    '/api/prices',
+    'https://api.coingecko.com/api/v3/simple/price?ids=okb&vs_currencies=usd',
+  ];
+
+  for (const url of sources) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      if (!r.ok) continue;
+      const data = await r.json();
+      // Normalize response
+      if (data.okb && typeof data.okb === 'number') {
+        return { OKB: data.okb, USDT: data.usdt || 1.0 };
+      }
+      if (data.okb && data.okb.usd) {
+        return { OKB: data.okb.usd, USDT: 1.0 };
+      }
+    } catch { /* try next */ }
+  }
+
+  // Hardcoded fallback
+  return { OKB: 48.0, USDT: 1.0 };
+}
+
+async function refreshPortfolio() {
+  if (!userAddress) return;
+
+  try {
+    const rpc = new ethers.JsonRpcProvider(XLAYER_RPC);
+
+    // Fetch native OKB balance + ERC20 balances in parallel
+    const nativePromise = rpc.getBalance(userAddress);
+    const tokenPromises = TOKENS.map(async (tok) => {
+      const contract = new ethers.Contract(tok.addr, ERC20_ABI, rpc);
+      const raw = await contract.balanceOf(userAddress);
+      return { addr: tok.addr, balance: parseFloat(ethers.formatUnits(raw, tok.decimals)) };
+    });
+    const pricePromise = fetchPrices();
+
+    const [nativeRaw, prices, ...tokenResults] = await Promise.all([
+      nativePromise, pricePromise, ...tokenPromises,
+    ]);
+
+    const nativeOKB = parseFloat(ethers.formatEther(nativeRaw));
+
+    // Build portfolio
+    const balances = {};
+    tokenResults.forEach((t) => { balances[t.addr] = t.balance; });
+
+    // Combine native OKB + WOKB as total OKB
+    const okbAddr = TOKENS[0].addr;
+    const totalOKBBalance = (balances[okbAddr] || 0) + nativeOKB;
+
+    let totalValue = 0;
+    const portfolio = TOKENS.map((tok) => {
+      const balance = tok.addr === okbAddr ? totalOKBBalance : (balances[tok.addr] || 0);
+      const erc20Balance = balances[tok.addr] || 0;
+      const price = prices[tok.symbol] || 0;
+      const value = balance * price;
+      totalValue += value;
+      return {
+        ...tok,
+        balance,
+        erc20Balance,
+        nativeBalance: tok.addr === okbAddr ? nativeOKB : null,
+        price,
+        value,
+      };
+    });
+
+    portfolio.forEach((tok) => {
+      tok.current = totalValue > 0 ? (tok.value / totalValue * 100) : 0;
+      tok.drift = tok.current - tok.target;
+    });
+
+    updateDashboard({ portfolio, totalValue, nativeOKB, tokenCount: TOKENS.length });
+
+  } catch (err) {
+    console.error('Refresh error:', err);
+    showToast('Error fetching data: ' + err.message, 'error');
+  }
+}
+
+function startAutoRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(refreshPortfolio, REFRESH_INTERVAL);
+}
+
+// ---- UI Update -------------------------------------------------------------
+function drawDonut(canvas, segments, total) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const size = 200;
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  ctx.scale(dpr, dpr);
+
+  const cx = size / 2, cy = size / 2;
+  const outerR = 90, innerR = 62;
+  let startAngle = -Math.PI / 2;
+
+  ctx.clearRect(0, 0, size, size);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+  ctx.arc(cx, cy, innerR, Math.PI * 2, 0, true);
+  ctx.fillStyle = '#1a2030';
+  ctx.fill();
+
+  if (total <= 0) return;
+
+  segments.forEach(function(seg, i) {
+    if (seg.pct <= 0) return;
+    const sweep = (seg.pct / 100) * Math.PI * 2;
+    const gap = 0.02;
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, startAngle + gap, startAngle + sweep - gap);
+    ctx.arc(cx, cy, innerR, startAngle + sweep - gap, startAngle + gap, true);
+    ctx.closePath();
+    ctx.fillStyle = COLORS[i % COLORS.length];
+    ctx.fill();
+
+    ctx.save();
+    ctx.shadowColor = COLORS[i % COLORS.length];
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, startAngle + gap, startAngle + sweep - gap);
+    ctx.arc(cx, cy, innerR, startAngle + sweep - gap, startAngle + gap, true);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    startAngle += sweep;
+  });
+}
+
+function driftClass(d) {
+  var a = Math.abs(d);
+  if (a < 3) return 'drift-ok';
+  if (a < 7) return 'drift-warn';
+  return 'drift-bad';
+}
+
+function formatDrift(d) {
+  return (d >= 0 ? '+' : '') + d.toFixed(1) + '%';
+}
+
+function formatUSD(n) {
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function truncAddr(a) {
+  return a.slice(0, 6) + '...' + a.slice(-4);
+}
+
+function updateDashboard(data) {
+  const { portfolio, totalValue, nativeOKB, tokenCount } = data;
+
+  // Metrics
+  document.getElementById('m-value').textContent = formatUSD(totalValue);
+  document.getElementById('m-tokens').textContent = tokenCount + ' tokens tracked';
+  document.getElementById('m-gas').textContent = nativeOKB.toFixed(4) + ' OKB';
+  document.getElementById('m-count').textContent = tokenCount;
+
+  let maxDrift = 0;
+  portfolio.forEach((t) => { if (Math.abs(t.drift) > maxDrift) maxDrift = Math.abs(t.drift); });
+  document.getElementById('m-drift').textContent = maxDrift.toFixed(1) + '%';
+  const driftLabel = document.getElementById('m-drift-label');
+  if (maxDrift < 3) { driftLabel.textContent = 'within threshold'; driftLabel.style.color = '#10b981'; }
+  else if (maxDrift < 7) { driftLabel.textContent = 'approaching threshold'; driftLabel.style.color = '#f59e0b'; }
+  else { driftLabel.textContent = 'rebalance needed!'; driftLabel.style.color = '#ef4444'; }
+
+  // Donut
+  const segments = portfolio.map((t) => ({ pct: t.current }));
+  drawDonut(document.getElementById('donut'), segments, totalValue);
+  document.getElementById('dc-value').textContent = formatUSD(totalValue);
+
+  // Legend
+  let legendHtml = '';
+  portfolio.forEach((t, i) => {
+    legendHtml += '<div class="legend-item">' +
+      '<div class="legend-left"><span class="legend-dot" style="background:' + COLORS[i] + '"></span>' +
+      '<span class="legend-name">' + t.label + '</span></div>' +
+      '<div class="legend-right"><span class="legend-pct">' + t.current.toFixed(1) + '%</span>' +
+      '<div class="legend-val">' + formatUSD(t.value) + '</div></div></div>';
+  });
+  document.getElementById('legend').innerHTML = legendHtml;
+
+  // Allocation bars
+  let barsHtml = '';
+  portfolio.forEach((t, i) => {
+    const col = COLORS[i];
+    const dc = driftClass(t.drift);
+    barsHtml += '<div class="alloc-row">' +
+      '<div class="alloc-top">' +
+        '<div class="alloc-token"><span class="alloc-token-dot" style="background:' + col + '"></span>' + t.label + '</div>' +
+        '<div class="alloc-drift ' + dc + '">' + formatDrift(t.drift) + '</div>' +
+      '</div>' +
+      '<div class="alloc-bar">' +
+        '<div class="alloc-bar-fill" style="width:' + Math.min(t.current, 100) + '%;background:' + col + '"></div>' +
+        '<div class="alloc-bar-target" style="left:' + Math.min(t.target, 100) + '%" data-target="Target ' + t.target + '%"></div>' +
+      '</div>' +
+      '<div class="alloc-bottom">' +
+        '<span>Current: ' + t.current.toFixed(1) + '%</span>' +
+        '<span>Target: ' + t.target.toFixed(1) + '%</span>' +
+      '</div></div>';
+  });
+  document.getElementById('alloc-bars').innerHTML = barsHtml;
+
+  // Token details table
+  let rows = '';
+  portfolio.forEach((t, i) => {
+    const dc = driftClass(t.drift);
+    let balText = t.balance.toFixed(t.decimals <= 6 ? 2 : 4);
+    if (t.nativeBalance !== null) {
+      balText += ' (' + t.erc20Balance.toFixed(4) + ' wrapped + ' + t.nativeBalance.toFixed(4) + ' native)';
+    }
+    rows += '<tr>' +
+      '<td class="td-bold" style="color:' + COLORS[i] + '">' + t.label + '</td>' +
+      '<td class="td-mono">' + truncAddr(t.addr) + '</td>' +
+      '<td>' + balText + '</td>' +
+      '<td class="td-green">' + formatUSD(t.price) + '</td>' +
+      '<td class="td-bold">' + formatUSD(t.value) + '</td>' +
+      '<td class="td-blue">' + t.current.toFixed(1) + '%</td>' +
+      '<td>' + t.target.toFixed(1) + '%</td>' +
+      '<td><span class="alloc-drift ' + dc + '">' + formatDrift(t.drift) + '</span></td>' +
+      '</tr>';
+  });
+  document.getElementById('token-body').innerHTML = rows;
+}
+
+// ---- Toast -----------------------------------------------------------------
+function showToast(msg, type) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  el.innerHTML = (type === 'success' ? '&#x2705;' : '&#x26A0;&#xFE0F;') + ' ' + msg;
+  document.body.appendChild(el);
+  setTimeout(() => { el.classList.add('hide'); setTimeout(() => el.remove(), 300); }, 4000);
+}
+
+// ---- Wallet events ---------------------------------------------------------
+if (window.ethereum) {
+  window.ethereum.on('accountsChanged', (accounts) => {
+    if (accounts.length === 0) {
+      disconnectWallet();
+    } else {
+      userAddress = accounts[0];
+      updateWalletUI(true);
+      refreshPortfolio();
+    }
+  });
+
+  window.ethereum.on('chainChanged', () => {
+    window.location.reload();
+  });
+}
+
+// ---- Init ------------------------------------------------------------------
+drawDonut(document.getElementById('donut'), [], 0);
+</script>
+</body>
+</html>
