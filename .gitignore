@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.pyo
+scripts/events.json
+scripts/state.json
+scripts/snapshots.json
+scripts/*.tmp
+.env
+.venv/
