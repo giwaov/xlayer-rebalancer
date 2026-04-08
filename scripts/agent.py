@@ -381,142 +381,24 @@ def load_snapshots() -> list:
 # Dashboard
 # ---------------------------------------------------------------------------
 
-DASHBOARD_HTML = r"""<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>XLayer Rebalancer</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;padding:24px;max-width:960px;margin:0 auto}
-h1{color:#58a6ff;margin-bottom:8px;font-size:24px}
-.sub{color:#8b949e;margin-bottom:24px;font-size:14px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-@media(max-width:600px){.grid{grid-template-columns:1fr}}
-.card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px}
-.card h3{color:#8b949e;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
-.stat{display:inline-block;margin-right:24px;margin-bottom:8px}
-.stat .label{color:#8b949e;font-size:11px}
-.stat .value{font-size:20px;color:#f0f6fc}
-.bar-row{display:flex;align-items:center;margin-bottom:10px}
-.bar-label{width:60px;font-size:13px;color:#c9d1d9}
-.bar-wrap{flex:1;height:24px;background:#21262d;border-radius:4px;position:relative;overflow:hidden;margin:0 8px}
-.bar-fill{height:100%;border-radius:4px;transition:width .3s}
-.bar-target{position:absolute;top:0;height:100%;width:2px;background:#f85149;z-index:2}
-.bar-pct{width:50px;font-size:13px;text-align:right;color:#8b949e}
-.drift-ok{color:#3fb950}.drift-warn{color:#f0883e}.drift-bad{color:#f85149}
-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
-th,td{padding:6px 10px;text-align:left;border-bottom:1px solid #21262d}
-th{color:#8b949e;font-size:11px;text-transform:uppercase}
-.paper{color:#f0883e}.live{color:#3fb950}
-.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
-.tag-paper{background:#f0883e22;color:#f0883e}
-.tag-live{background:#3fb95022;color:#3fb950}
-.tag-paused{background:#f8514922;color:#f85149}
-.tag-running{background:#3fb95022;color:#3fb950}
-.colors{--c0:#58a6ff;--c1:#3fb950;--c2:#f0883e;--c3:#bc8cff;--c4:#f778ba;--c5:#79c0ff}
-svg text{fill:#c9d1d9;font-family:inherit}
-</style></head>
-<body class="colors">
-<h1>XLayer Rebalancer</h1>
-<p class="sub">Autonomous portfolio rebalancing on X Layer (Chain 196)</p>
+DASHBOARD_FILE = SCRIPT_DIR / "dashboard.html"
 
-<div class="grid">
-<div class="card">
- <h3>Status</h3>
- <div id="status"></div>
-</div>
-<div class="card">
- <h3>Portfolio Value</h3>
- <div id="value"></div>
-</div>
-</div>
+_dashboard_cache = {"mtime": 0.0, "data": b""}
 
-<div class="card" style="margin-bottom:16px">
- <h3>Allocations (current vs target)</h3>
- <div id="alloc"></div>
-</div>
 
-<div class="card" style="margin-bottom:16px">
- <h3>Allocation Chart</h3>
- <div id="pie" style="display:flex;justify-content:center"></div>
-</div>
-
-<div class="card">
- <h3>Rebalance History</h3>
- <table><thead><tr><th>#</th><th>Time</th><th>Sell</th><th>Buy</th><th>USD</th><th>Mode</th></tr></thead>
- <tbody id="events"></tbody></table>
-</div>
-
-<script>
-const COLORS=['#58a6ff','#3fb950','#f0883e','#bc8cff','#f778ba','#79c0ff'];
-function driftClass(d){return Math.abs(d)<3?'drift-ok':Math.abs(d)<7?'drift-warn':'drift-bad';}
-
-function drawPie(data){
- const size=200,cx=100,cy=100,r=80;
- let svg='<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">';
- let startAngle=-Math.PI/2;
- data.forEach(function(d,i){
-  const angle=d.pct/100*2*Math.PI;
-  const x1=cx+r*Math.cos(startAngle),y1=cy+r*Math.sin(startAngle);
-  const x2=cx+r*Math.cos(startAngle+angle),y2=cy+r*Math.sin(startAngle+angle);
-  const large=angle>Math.PI?1:0;
-  const col=COLORS[i%COLORS.length];
-  if(d.pct>=100){svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+col+'"/>';}
-  else if(d.pct>0){svg+='<path d="M'+cx+','+cy+' L'+x1+','+y1+' A'+r+','+r+' 0 '+large+',1 '+x2+','+y2+' Z" fill="'+col+'"/>';}
-  startAngle+=angle;
- });
- svg+='</svg>';
- // Legend
- let legend='<div style="margin-left:16px;font-size:13px">';
- data.forEach(function(d,i){
-  legend+='<div style="margin-bottom:6px"><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:'+COLORS[i%COLORS.length]+';margin-right:6px;vertical-align:middle"></span>'+d.label+' '+d.pct.toFixed(1)+'%</div>';
- });
- legend+='</div>';
- document.getElementById('pie').innerHTML='<div style="display:flex;align-items:center">'+svg+legend+'</div>';
-}
-
-async function refresh(){
- const r=await fetch('/api/status');const d=await r.json();
- // Status
- document.getElementById('status').innerHTML=
-  '<span class="tag '+(d.dry_run?'tag-paper':'tag-live')+'">'+(d.dry_run?'PAPER':'LIVE')+'</span> '+
-  '<span class="tag '+(d.paused?'tag-paused':'tag-running')+'">'+(d.paused?'PAUSED':'RUNNING')+'</span>'+
-  '<div style="margin-top:12px">'+
-  '<div class="stat"><div class="label">Rebalances</div><div class="value">'+d.total_rebalances+'</div></div>'+
-  '<div class="stat"><div class="label">Trades</div><div class="value">'+d.total_trades+'</div></div></div>';
- // Value
- document.getElementById('value').innerHTML=
-  '<div class="stat"><div class="label">Total</div><div class="value">$'+d.total_value.toFixed(2)+'</div></div>'+
-  '<div class="stat"><div class="label">Tokens</div><div class="value">'+d.token_count+'</div></div>';
- // Allocations
- const alloc=d.portfolio||[];
- let bars='';
- alloc.forEach(function(t,i){
-  const col=COLORS[i%COLORS.length];
-  bars+='<div class="bar-row">'+
-   '<div class="bar-label">'+t.label+'</div>'+
-   '<div class="bar-wrap"><div class="bar-fill" style="width:'+Math.min(t.current,100)+'%;background:'+col+'"></div>'+
-   '<div class="bar-target" style="left:'+Math.min(t.target,100)+'%"></div></div>'+
-   '<div class="bar-pct"><span class="'+driftClass(t.drift)+'">'+
-   (t.drift>=0?'+':'')+t.drift.toFixed(1)+'%</span></div></div>';
- });
- document.getElementById('alloc').innerHTML=bars||'<div style="color:#8b949e">No portfolio data yet</div>';
- // Pie chart
- if(alloc.length>0){
-  drawPie(alloc.map(function(t){return{label:t.label,pct:t.current};}));
- }
- // Events
- const tbody=document.getElementById('events');tbody.innerHTML='';
- (d.events||[]).slice().reverse().forEach(function(e,i){
-  const tr=document.createElement('tr');
-  tr.innerHTML='<td>'+(d.events.length-i)+'</td><td>'+e.timestamp+'</td>'+
-   '<td>'+e.sell_label+'</td><td>'+e.buy_label+'</td>'+
-   '<td>$'+e.usd_amount+'</td>'+
-   '<td class="'+(e.mode||'paper')+'">'+(e.mode||'paper').toUpperCase()+'</td>';
-  tbody.appendChild(tr);
- });
-}
-refresh();setInterval(refresh,10000);
-</script></body></html>"""
+def get_dashboard_html() -> bytes:
+    """Load dashboard HTML from external file with file-change caching."""
+    if not DASHBOARD_FILE.exists():
+        return b"<html><body><h1>dashboard.html not found</h1></body></html>"
+    try:
+        mtime = DASHBOARD_FILE.stat().st_mtime
+    except OSError:
+        mtime = 0.0
+    if mtime != _dashboard_cache["mtime"]:
+        with open(DASHBOARD_FILE, "rb") as f:
+            _dashboard_cache["data"] = f.read()
+        _dashboard_cache["mtime"] = mtime
+    return _dashboard_cache["data"]
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
@@ -530,7 +412,6 @@ class DashboardHandler(BaseHTTPRequestHandler):
             events = load_events()
             snapshots = load_snapshots()
 
-            # Build portfolio view from latest snapshot
             portfolio_view = []
             total_value = 0.0
             token_count = 0
@@ -566,7 +447,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/html")
             self.end_headers()
-            self.wfile.write(DASHBOARD_HTML.encode())
+            self.wfile.write(get_dashboard_html())
 
 
 def start_dashboard():
