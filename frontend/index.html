@@ -636,6 +636,138 @@ tr:hover td { background: var(--accent-subtle2); }
 .feature-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
 .feature-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
 
+/* ===== Rebalance Preview ===== */
+.rebal-panel { margin-top: 20px; }
+.rebal-status {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  transition: background 0.35s, border-color 0.35s;
+}
+.rebal-status-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.rebal-status-ok .rebal-status-icon { background: var(--green-bg); }
+.rebal-status-warn .rebal-status-icon { background: var(--amber-bg); }
+.rebal-status-bad .rebal-status-icon { background: var(--red-bg); }
+.rebal-status-text { flex: 1; }
+.rebal-status-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.rebal-status-desc { font-size: 12px; color: var(--text3); }
+
+.trade-list { display: flex; flex-direction: column; gap: 10px; }
+.trade-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: all 0.3s;
+}
+.trade-item:hover { border-color: var(--border2); }
+.trade-arrow {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--accent-subtle);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px; color: var(--accent);
+}
+.trade-detail { flex: 1; }
+.trade-action { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.trade-action .sell-text { color: var(--red); }
+.trade-action .buy-text { color: var(--green); }
+.trade-reason { font-size: 12px; color: var(--text3); }
+.trade-amount {
+  font-size: 16px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+}
+.no-trades {
+  text-align: center; padding: 32px 16px;
+  color: var(--text3); font-size: 13px;
+}
+.no-trades-icon { font-size: 28px; margin-bottom: 8px; }
+
+/* ===== Quick Start Guide ===== */
+.quickstart-section {
+  position: relative; z-index: 1;
+  max-width: 1200px; margin: 0 auto;
+  padding: 0 32px 80px;
+}
+.qs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 800px) { .qs-grid { grid-template-columns: 1fr; } }
+.qs-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 24px;
+  transition: all 0.3s;
+}
+.qs-card:hover { border-color: var(--border2); }
+.qs-card-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-radius: 7px;
+  font-size: 12px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 14px;
+}
+.qs-card-title {
+  font-size: 15px; font-weight: 700;
+  margin-bottom: 8px; letter-spacing: -0.2px;
+}
+.qs-card-desc {
+  font-size: 13px; color: var(--text2);
+  line-height: 1.6; margin-bottom: 14px;
+}
+.code-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text2);
+  transition: background 0.35s, border-color 0.35s;
+}
+[data-theme="dark"] .code-block { background: #0c0c0f; }
+.code-block .cmd { color: var(--green); }
+.code-block .comment { color: var(--text3); }
+.code-block .flag { color: var(--amber); }
+.config-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 13px; margin-top: 12px;
+}
+.config-table th {
+  text-align: left; padding: 8px 10px;
+  background: var(--surface2);
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+.config-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.config-table td:first-child {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+}
+
 /* ===== Toast ===== */
 .toast {
   position: fixed; bottom: 24px; right: 24px;
@@ -816,6 +948,16 @@ tr:hover td { background: var(--accent-subtle2); }
       </div>
     </div>
 
+    <!-- Rebalance Preview -->
+    <div class="card reveal" style="margin-bottom:20px">
+      <div class="card-header">
+        <span class="card-title">Rebalance Preview</span>
+        <div class="live-indicator"><span class="li-dot"></span>Computed live</div>
+      </div>
+      <div id="rebal-status"></div>
+      <div id="rebal-trades" class="trade-list"></div>
+    </div>
+
     <div class="card reveal">
       <div class="card-header">
         <span class="card-title">Token Details</span>
@@ -889,6 +1031,79 @@ tr:hover td { background: var(--accent-subtle2); }
       <div class="feature-icon">&#x1F512;</div>
       <div class="feature-title">Paper Mode First</div>
       <div class="feature-desc">Starts in paper trading mode by default. Simulate and verify before going live with real funds.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Quick Start Guide -->
+<div class="section-sep"><hr></div>
+<section class="how-section">
+  <div class="section-label reveal">Quick Start</div>
+  <h3 class="reveal reveal-delay-1">Run the rebalancer in 4 steps</h3>
+  <p class="section-desc reveal reveal-delay-2">The agent runs as a Python script on your machine. It uses the OnchainOS CLI to interact with X Layer - no private keys in code.</p>
+</section>
+<section class="quickstart-section">
+  <div class="qs-grid">
+    <div class="qs-card reveal">
+      <div class="qs-card-num">01</div>
+      <div class="qs-card-title">Install OnchainOS CLI</div>
+      <div class="qs-card-desc">Install the CLI and log in to your wallet. Your keys are managed securely by OnchainOS - never exposed in code.</div>
+      <div class="code-block"><span class="comment"># Install the CLI</span>
+<span class="cmd">npm install -g onchainos</span>
+
+<span class="comment"># Log in with your wallet</span>
+<span class="cmd">onchainos wallet login</span>
+
+<span class="comment"># Verify your address</span>
+<span class="cmd">onchainos wallet address</span></div>
+    </div>
+    <div class="qs-card reveal reveal-delay-1">
+      <div class="qs-card-num">02</div>
+      <div class="qs-card-title">Clone &amp; configure</div>
+      <div class="qs-card-desc">Clone the repo and edit the config file to set your target allocation, drift threshold, and other parameters.</div>
+      <div class="code-block"><span class="cmd">git clone</span> https://github.com/giwaov/xlayer-rebalancer
+<span class="cmd">cd</span> xlayer-rebalancer</div>
+      <table class="config-table">
+        <thead><tr><th>Parameter</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>DRY_RUN</td><td>True</td><td>Paper mode (no real swaps)</td></tr>
+          <tr><td>DRIFT_THRESHOLD</td><td>5.0%</td><td>Min drift to trigger rebalance</td></tr>
+          <tr><td>CHECK_INTERVAL</td><td>300s</td><td>Seconds between checks</td></tr>
+          <tr><td>TARGET_PORTFOLIO</td><td>60/40</td><td>OKB/USDT allocation</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="qs-card reveal">
+      <div class="qs-card-num">03</div>
+      <div class="qs-card-title">Run in paper mode</div>
+      <div class="qs-card-desc">Start the agent in paper mode first. It will fetch real prices and balances but only simulate swaps - nothing is executed on-chain.</div>
+      <div class="code-block"><span class="comment"># Start in paper mode (default)</span>
+<span class="cmd">python</span> scripts/agent.py
+
+<span class="comment"># Open the dashboard</span>
+<span class="comment"># http://localhost:3197</span>
+
+<span class="comment"># The agent will:</span>
+<span class="comment"># 1. Check balances every 5 min</span>
+<span class="comment"># 2. Calculate drift vs targets</span>
+<span class="comment"># 3. Show what trades it WOULD make</span>
+<span class="comment"># 4. Log everything to events.json</span></div>
+    </div>
+    <div class="qs-card reveal reveal-delay-1">
+      <div class="qs-card-num">04</div>
+      <div class="qs-card-title">Go live</div>
+      <div class="qs-card-desc">When you're confident, edit <code style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px">config.py</code> to set <code style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px">DRY_RUN = False</code> and the agent will execute real swaps on X Layer via OnchainOS.</div>
+      <div class="code-block"><span class="comment"># In scripts/config.py, change:</span>
+DRY_RUN = <span class="flag">False</span>
+
+<span class="comment"># Then restart the agent</span>
+<span class="cmd">python</span> scripts/agent.py
+
+<span class="comment"># The agent now executes real swaps!</span>
+<span class="comment"># - Security scans every token first</span>
+<span class="comment"># - Max $50 per swap (configurable)</span>
+<span class="comment"># - 0.5% slippage protection</span>
+<span class="comment"># - All trades logged on-chain</span></div>
     </div>
   </div>
 </section>
@@ -1202,6 +1417,88 @@ function updateDashboard(data) {
     rows += '<tr><td class="td-bold" style="color:'+COLORS[i]+'">'+t.label+'</td><td class="td-mono">'+truncAddr(t.addr)+'</td><td class="mono">'+bt+'</td><td class="td-green">'+formatUSD(t.price)+'</td><td class="td-bold mono">'+formatUSD(t.value)+'</td><td class="td-blue">'+t.current.toFixed(1)+'%</td><td>'+t.target.toFixed(1)+'%</td><td><span class="alloc-drift '+dc+'">'+formatDrift(t.drift)+'</span></td></tr>';
   });
   document.getElementById('token-body').innerHTML = rows;
+
+  // Rebalance preview
+  updateRebalancePreview(portfolio, totalValue);
+}
+
+// ---- Rebalance Preview -----------------------------------------------------
+function updateRebalancePreview(portfolio, totalValue) {
+  const DRIFT_THRESHOLD = 5.0;
+  const MAX_SWAP_USD = 50.0;
+  const statusEl = document.getElementById('rebal-status');
+  const tradesEl = document.getElementById('rebal-trades');
+
+  let maxDrift = 0;
+  portfolio.forEach(t => { if (Math.abs(t.drift) > maxDrift) maxDrift = Math.abs(t.drift); });
+
+  // Build status badge
+  let sClass, sIcon, sTitle, sDesc;
+  if (maxDrift < DRIFT_THRESHOLD) {
+    sClass = 'rebal-status-ok'; sIcon = '&#x2705;';
+    sTitle = 'Portfolio is balanced';
+    sDesc = 'Max drift ' + maxDrift.toFixed(1) + '% is below the ' + DRIFT_THRESHOLD + '% threshold. No action needed.';
+  } else if (maxDrift < DRIFT_THRESHOLD * 2) {
+    sClass = 'rebal-status-warn'; sIcon = '&#x26A0;&#xFE0F;';
+    sTitle = 'Rebalance recommended';
+    sDesc = 'Max drift ' + maxDrift.toFixed(1) + '% exceeds the ' + DRIFT_THRESHOLD + '% threshold.';
+  } else {
+    sClass = 'rebal-status-bad'; sIcon = '&#x1F6A8;';
+    sTitle = 'Rebalance needed';
+    sDesc = 'Max drift ' + maxDrift.toFixed(1) + '% is significantly above the ' + DRIFT_THRESHOLD + '% threshold.';
+  }
+  statusEl.innerHTML = '<div class="rebal-status ' + sClass + '"><div class="rebal-status-icon">' + sIcon + '</div><div class="rebal-status-text"><div class="rebal-status-title">' + sTitle + '</div><div class="rebal-status-desc">' + sDesc + '</div></div></div>';
+
+  // Compute trades
+  var overweight = [];
+  var underweight = [];
+  portfolio.forEach(function(t) {
+    var diff = t.current - t.target;
+    if (diff > 0.1) overweight.push({ label: t.label, diff: diff, value: (diff / 100) * totalValue });
+    else if (diff < -0.1) underweight.push({ label: t.label, diff: diff, value: (Math.abs(diff) / 100) * totalValue });
+  });
+
+  if (maxDrift < DRIFT_THRESHOLD || (overweight.length === 0 && underweight.length === 0)) {
+    tradesEl.innerHTML = '<div class="no-trades"><div class="no-trades-icon">&#x2696;&#xFE0F;</div>No trades needed right now.<br>The agent continuously monitors drift and will act when the threshold is exceeded.</div>';
+    return;
+  }
+
+  var trades = [];
+  var sellIdx = 0, buyIdx = 0;
+  var sellRemain = overweight.length > 0 ? overweight[0].value : 0;
+  var buyRemain = underweight.length > 0 ? underweight[0].value : 0;
+  while (sellIdx < overweight.length && buyIdx < underweight.length) {
+    var amount = Math.min(sellRemain, buyRemain, MAX_SWAP_USD);
+    trades.push({
+      sell: overweight[sellIdx].label,
+      buy: underweight[buyIdx].label,
+      amount: amount,
+      sellDrift: overweight[sellIdx].diff,
+      buyDrift: underweight[buyIdx].diff
+    });
+    sellRemain -= amount;
+    buyRemain -= amount;
+    if (sellRemain < 0.01) { sellIdx++; sellRemain = sellIdx < overweight.length ? overweight[sellIdx].value : 0; }
+    if (buyRemain < 0.01) { buyIdx++; buyRemain = buyIdx < underweight.length ? underweight[buyIdx].value : 0; }
+  }
+
+  if (trades.length === 0) {
+    tradesEl.innerHTML = '<div class="no-trades"><div class="no-trades-icon">&#x2696;&#xFE0F;</div>Portfolio balanced.</div>';
+    return;
+  }
+
+  var html = '';
+  trades.forEach(function(tr) {
+    html += '<div class="trade-item">' +
+      '<div class="trade-arrow">&#x21C4;</div>' +
+      '<div class="trade-detail">' +
+        '<div class="trade-action"><span class="sell-text">Sell ' + tr.sell + '</span> &#x2192; <span class="buy-text">Buy ' + tr.buy + '</span></div>' +
+        '<div class="trade-reason">' + tr.sell + ' is +' + tr.sellDrift.toFixed(1) + '% overweight, ' + tr.buy + ' is ' + tr.buyDrift.toFixed(1) + '% underweight</div>' +
+      '</div>' +
+      '<div class="trade-amount">' + formatUSD(tr.amount) + '</div>' +
+    '</div>';
+  });
+  tradesEl.innerHTML = html;
 }
 
 // ---- Toast -----------------------------------------------------------------
