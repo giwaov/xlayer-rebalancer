@@ -4,15 +4,21 @@ module.exports = async function handler(req, res) {
 
   try {
     const r = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=okb&vs_currencies=usd'
+      'https://api.coingecko.com/api/v3/simple/price?ids=okb&vs_currencies=usd',
+      { signal: AbortSignal.timeout(8000) }
     );
+    if (!r.ok) {
+      return res.status(502).json({ error: 'CoinGecko returned ' + r.status });
+    }
     const data = await r.json();
+    if (!data.okb || !data.okb.usd) {
+      return res.status(502).json({ error: 'Unexpected CoinGecko response' });
+    }
     res.status(200).json({
-      okb: data.okb ? data.okb.usd : 48.0,
+      okb: data.okb.usd,
       usdt: 1.0,
     });
   } catch (err) {
-    // Fallback prices if CoinGecko is unavailable
-    res.status(200).json({ okb: 48.0, usdt: 1.0 });
+    res.status(502).json({ error: 'Price feed unavailable: ' + err.message });
   }
 };
