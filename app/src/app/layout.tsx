@@ -14,7 +14,24 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "YieldPilot - Autonomous Portfolio Rebalancer on X Layer",
-  description: "Keep your crypto portfolio balanced automatically. Connect wallet, set targets, one-click rebalance on X Layer.",
+  description: "Keep your crypto portfolio balanced automatically. Set targets, pay $0.01 via x402, and let the agent rebalance your X Layer tokens with zero gas.",
+  keywords: ["X Layer", "portfolio rebalancer", "x402", "OKX", "DeFi", "crypto", "Onchain OS", "agentic wallet"],
+  openGraph: {
+    title: "YieldPilot - Autonomous Portfolio Rebalancer",
+    description: "Set targets, pay $0.01 via x402, and let the agent rebalance your X Layer tokens with zero gas.",
+    type: "website",
+    siteName: "YieldPilot",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "YieldPilot - Autonomous Portfolio Rebalancer on X Layer",
+    description: "Set targets, pay $0.01 via x402, and let the agent rebalance your X Layer tokens with zero gas.",
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+  },
 };
 
 export default function RootLayout({

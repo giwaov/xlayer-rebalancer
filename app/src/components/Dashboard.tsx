@@ -432,18 +432,28 @@ export default function Dashboard() {
   const shortAddr = account ? `${account.slice(0, 6)}...${account.slice(-4)}` : "";
 
   return (
-    <div className={`min-h-screen ${theme === "dark" ? "bg-[#050507] text-gray-100" : "bg-gray-50 text-gray-900"}`}>
+    <div className={`min-h-screen relative ${theme === "dark" ? "bg-[#030306] text-gray-100" : "bg-[#fafbfe] text-gray-900"}`}>
+      {/* Ambient background */}
+      <div className="fixed inset-0 -z-10 pointer-events-none" aria-hidden>
+        <div className={`absolute inset-0 ${theme === "dark" ? "opacity-[0.03]" : "opacity-[0.04]"}`}
+          style={{ backgroundImage: "radial-gradient(circle at center, currentColor 0.5px, transparent 0.5px)", backgroundSize: "24px 24px" }} />
+        <div className="absolute top-[-30%] left-[-15%] w-[700px] h-[700px] rounded-full bg-blue-500/[0.06] blur-[150px] animate-[float_20s_ease-in-out_infinite]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-purple-500/[0.04] blur-[130px] animate-[float_25s_ease-in-out_infinite_reverse]" />
+      </div>
+
       {/* Header */}
       <header
-        className={`sticky top-0 z-50 border-b px-6 h-14 flex items-center justify-between ${
-          theme === "dark" ? "bg-[#050507] border-gray-800" : "bg-white border-gray-200"
+        className={`sticky top-0 z-50 border-b px-6 h-14 flex items-center justify-between glass ${
+          theme === "dark" ? "bg-[#030306]/70 border-white/[0.06]" : "bg-white/70 border-black/[0.06]"
         }`}
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">
-            YP
-          </div>
-          <span className="font-bold text-sm tracking-tight">YieldPilot</span>
+          <button onClick={disconnect} className="flex items-center gap-2 hover:opacity-80 transition" title="Back to home">
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">
+              YP
+            </div>
+            <span className="font-bold text-sm tracking-tight">YieldPilot</span>
+          </button>
           <span
             className={`text-[10px] px-2 py-0.5 rounded border font-semibold ${
               theme === "dark"
@@ -530,69 +540,202 @@ export default function Dashboard() {
 
       {/* Main content */}
       {!account ? (
-        /* Connect screen */
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[calc(100vh-56px)] px-6 text-center">
-          <div
-            className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 ${
-              theme === "dark" ? "bg-blue-500/10" : "bg-blue-50"
-            }`}
-          >
-            ⚖️
-          </div>
-          <h1 className="text-2xl font-extrabold tracking-tight mb-2">Keep your portfolio balanced</h1>
-          <p className={`text-sm max-w-md leading-relaxed mb-8 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-            Connect your wallet, set your ideal allocation with simple sliders, and let YieldPilot
-            automatically rebalance your X Layer tokens. No coding needed.
-          </p>
-          <button
-            onClick={connectWallet}
-            disabled={connecting}
-            className="bg-blue-500 text-white px-7 py-3 rounded-xl text-sm font-bold hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/20 transition-all hover:-translate-y-0.5 disabled:opacity-50"
-          >
-            {connecting ? (
-              <span className="flex items-center gap-2">
-                <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Connecting...
+        /* Landing / Connect screen */
+        <div className="flex-1 flex flex-col items-center min-h-[calc(100vh-56px)] px-6 relative">
+          {/* Hero */}
+          <div className="relative w-full max-w-4xl pt-24 pb-20 text-center">
+            {/* Orbiting decorative dots */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] w-[280px] h-[280px] -z-10 opacity-[0.15] pointer-events-none" aria-hidden>
+              <div className="absolute w-3 h-3 rounded-full bg-blue-500 animate-[orbit_12s_linear_infinite]" />
+              <div className="absolute w-2 h-2 rounded-full bg-purple-500 animate-[orbit_18s_linear_infinite_reverse]" />
+              <div className="absolute w-2.5 h-2.5 rounded-full bg-cyan-400 animate-[orbit_15s_linear_infinite_2s]" />
+            </div>
+
+            {/* Hackathon banner */}
+            <div className="animate-fade-up mb-8">
+              <div className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-full border ${
+                theme === "dark" ? "bg-white/[0.03] border-white/[0.08]" : "bg-black/[0.02] border-black/[0.06]"
+              }`}>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                </span>
+                <span className={`text-[11px] font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>
+                  OKX Build X Hackathon
+                </span>
+              </div>
+            </div>
+
+            {/* Feature pills */}
+            <div className="animate-fade-up stagger-1 flex flex-wrap items-center justify-center gap-2 mb-8">
+              {[
+                { text: "X Layer Native", cls: theme === "dark" ? "bg-blue-500/10 border-blue-500/20 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600" },
+                { text: "x402 Micropayments", cls: theme === "dark" ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-green-50 border-green-200 text-green-600" },
+                { text: "Agentic Wallet", cls: theme === "dark" ? "bg-purple-500/10 border-purple-500/20 text-purple-400" : "bg-purple-50 border-purple-200 text-purple-600" },
+                { text: "Zero Gas", cls: theme === "dark" ? "bg-amber-500/10 border-amber-500/20 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-600" },
+              ].map((pill, i) => (
+                <span key={i} className={`text-[10px] font-bold px-3 py-1 rounded-full border ${pill.cls}`}>{pill.text}</span>
+              ))}
+            </div>
+
+            {/* Hero heading */}
+            <h1 className="animate-fade-up stagger-2 text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tighter mb-6 leading-[1.05]">
+              Your Portfolio,
+              <br />
+              <span className="bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400 bg-clip-text text-transparent animate-gradient-flow bg-[length:200%_auto]">
+                Always Balanced
               </span>
-            ) : (
-              "Connect Wallet"
-            )}
-          </button>
-          <p className={`mt-3 text-[11px] ${theme === "dark" ? "text-gray-600" : "text-gray-400"}`}>
-            Supports MetaMask & OKX Wallet
-          </p>
+            </h1>
+
+            <p className={`animate-fade-up stagger-3 text-lg sm:text-xl max-w-xl mx-auto leading-relaxed mb-10 ${
+              theme === "dark" ? "text-gray-400" : "text-gray-500"
+            }`}>
+              Set your ideal allocation with simple sliders. An autonomous agent monitors drift and rebalances your tokens on X Layer.
+            </p>
+
+            {/* CTA */}
+            <div className="animate-fade-up stagger-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={connectWallet}
+                disabled={connecting}
+                className="group relative bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-10 py-4 rounded-2xl text-sm font-bold hover:shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0"
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  {connecting ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      Connect Wallet
+                      <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </>
+                  )}
+                </span>
+              </button>
+              <a
+                href="https://github.com/giwaov/xlayer-rebalancer"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`group px-8 py-4 rounded-2xl text-sm font-semibold border-2 transition-all duration-300 hover:-translate-y-0.5 ${
+                  theme === "dark"
+                    ? "border-white/10 text-gray-300 hover:border-white/20 hover:bg-white/[0.03]"
+                    : "border-black/10 text-gray-600 hover:border-black/20 hover:bg-black/[0.02]"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                  View Source
+                </span>
+              </a>
+            </div>
+            <p className={`mt-4 text-[11px] ${theme === "dark" ? "text-gray-600" : "text-gray-400"}`}>
+              Works with MetaMask & OKX Wallet on X Layer (Chain 196)
+            </p>
+          </div>
+
+          {/* Live stats ticker */}
+          <div className="w-full max-w-3xl mb-20 animate-fade-up stagger-5">
+            <div className={`flex items-center justify-center divide-x py-5 px-8 rounded-2xl border ${
+              theme === "dark" ? "bg-white/[0.02] border-white/[0.06] divide-white/[0.06]" : "bg-white border-gray-200 divide-gray-200"
+            }`}>
+              {[
+                { value: "$0.01", label: "per rebalance", color: "text-green-500" },
+                { value: "0", label: "gas fees", color: "text-cyan-500" },
+                { value: "196", label: "chain ID", color: "text-blue-500" },
+                { value: "60s", label: "auto-check", color: "text-purple-500" },
+              ].map((stat, i) => (
+                <div key={i} className="text-center flex-1 px-4">
+                  <div className={`text-xl font-extrabold font-mono ${stat.color}`}>{stat.value}</div>
+                  <div className={`text-[10px] mt-0.5 ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* How it works */}
-          <div className="mt-16 w-full max-w-3xl">
-            <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-widest mb-2">How it works</p>
-            <h3 className="text-lg font-extrabold mb-2">Four steps. Zero complexity.</h3>
-            <p className={`text-xs mb-8 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-              Set it up in under a minute
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="w-full max-w-4xl pb-20">
+            <div className="text-center mb-12">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ${
+                theme === "dark" ? "text-blue-400" : "text-blue-500"
+              }`}>How it works</p>
+              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                Four steps to{" "}
+                <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">autopilot</span>
+              </h3>
+            </div>
+
+            <div className="relative">
+              {/* Connecting line */}
+              <div className={`hidden lg:block absolute top-14 left-[12.5%] right-[12.5%] h-px ${
+                theme === "dark" ? "bg-gradient-to-r from-transparent via-white/10 to-transparent" : "bg-gradient-to-r from-transparent via-gray-300 to-transparent"
+              }`} />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { icon: "🔗", title: "Connect", desc: "Link your MetaMask or OKX Wallet in one click", gradient: "from-blue-500/20 to-cyan-500/20" },
+                  { icon: "🎯", title: "Set Targets", desc: "Drag sliders or pick a preset strategy", gradient: "from-purple-500/20 to-pink-500/20" },
+                  { icon: "📊", title: "Monitor", desc: "Watch portfolio drift in real-time", gradient: "from-amber-500/20 to-orange-500/20" },
+                  { icon: "🤖", title: "Autopilot", desc: "Pay $0.01 via x402, agent rebalances for you", gradient: "from-green-500/20 to-emerald-500/20" },
+                ].map((step, i) => (
+                  <div
+                    key={i}
+                    className={`animate-fade-up group relative p-6 rounded-2xl border text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-xl gradient-border-card ${
+                      theme === "dark"
+                        ? "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12] hover:shadow-blue-500/5"
+                        : "bg-white border-gray-200 hover:border-gray-300 hover:shadow-blue-100"
+                    }`}
+                    style={{ animationDelay: `${i * 0.1}s` }}
+                  >
+                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full border-2 flex items-center justify-center text-[10px] font-bold font-mono ${
+                      theme === "dark"
+                        ? "bg-[#030306] border-blue-500/30 text-blue-400"
+                        : "bg-[#fafbfe] border-blue-300 text-blue-500"
+                    }`}>
+                      {i + 1}
+                    </div>
+                    <div className={`w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center text-2xl bg-gradient-to-br ${step.gradient} transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}>
+                      {step.icon}
+                    </div>
+                    <div className="font-bold text-sm mb-1.5">{step.title}</div>
+                    <div className={`text-[11px] leading-relaxed ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>{step.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Tech stack */}
+          <div className="w-full max-w-4xl pb-20">
+            <div className="text-center mb-8">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${
+                theme === "dark" ? "text-gray-500" : "text-gray-400"
+              }`}>Powered by</p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-3">
               {[
-                { icon: "🔗", title: "Connect", desc: "Link your wallet in one click" },
-                { icon: "🎯", title: "Set Targets", desc: "Choose your ideal allocation" },
-                { icon: "📊", title: "Monitor", desc: "Watch drift in real-time" },
-                { icon: "💳", title: "Auto-Rebalance", desc: "x402 micropayment, zero gas" },
-              ].map((step, i) => (
+                { label: "X Layer", detail: "Chain 196", dot: "bg-blue-500" },
+                { label: "x402 Protocol", detail: "HTTP 402 micropayments", dot: "bg-green-500" },
+                { label: "Onchain OS", detail: "Agentic Wallet + TEE", dot: "bg-purple-500" },
+                { label: "OKX DEX", detail: "Aggregated optimal swaps", dot: "bg-cyan-500" },
+                { label: "Zero Gas", detail: "Subsidized transactions", dot: "bg-amber-500" },
+              ].map((tech, i) => (
                 <div
                   key={i}
-                  className={`p-5 rounded-xl border text-center transition hover:-translate-y-0.5 ${
+                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 ${
                     theme === "dark"
-                      ? "bg-gray-900/50 border-gray-800 hover:border-gray-700"
-                      : "bg-white border-gray-200 hover:border-gray-300"
+                      ? "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]"
+                      : "bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm"
                   }`}
                 >
-                  <div
-                    className={`w-10 h-10 mx-auto mb-3 rounded-lg flex items-center justify-center text-lg ${
-                      theme === "dark" ? "bg-blue-500/10" : "bg-blue-50"
-                    }`}
-                  >
-                    {step.icon}
+                  <div className={`w-2 h-2 rounded-full ${tech.dot}`} />
+                  <div>
+                    <div className="text-xs font-bold">{tech.label}</div>
+                    <div className={`text-[10px] ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>{tech.detail}</div>
                   </div>
-                  <div className="font-bold text-sm mb-1">{step.title}</div>
-                  <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>{step.desc}</div>
                 </div>
               ))}
             </div>
@@ -659,8 +802,23 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Loading skeleton */}
+          {loading && allocations.length === 0 && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 animate-pulse">
+              {[1,2,3,4].map(i => (
+                <div key={i} className={`rounded-xl border p-4 ${
+                  theme === "dark" ? "bg-gray-900/50 border-gray-800" : "bg-white border-gray-200"
+                }`}>
+                  <div className={`h-2.5 w-20 rounded mb-3 ${theme === "dark" ? "bg-gray-800" : "bg-gray-200"}`} />
+                  <div className={`h-6 w-24 rounded mb-2 ${theme === "dark" ? "bg-gray-800" : "bg-gray-200"}`} />
+                  <div className={`h-2 w-16 rounded ${theme === "dark" ? "bg-gray-800" : "bg-gray-200"}`} />
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Metrics row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div className={`grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 transition-opacity duration-500 ${loading && allocations.length === 0 ? "opacity-0 h-0 overflow-hidden" : "opacity-100"}`}>
             <MetricCard
               label="Total Value"
               value={`$${totalValue.toFixed(2)}`}
@@ -732,7 +890,7 @@ export default function Dashboard() {
                     />
                     <div
                       className={`absolute inset-6 rounded-full flex flex-col items-center justify-center ${
-                        theme === "dark" ? "bg-[#050507]" : "bg-gray-50"
+                        theme === "dark" ? "bg-[#030306]" : "bg-[#fafbfe]"
                       }`}
                     >
                       <div className="font-bold font-mono text-lg">${totalValue.toFixed(0)}</div>
@@ -1031,7 +1189,7 @@ export default function Dashboard() {
                   <button
                     onClick={executeRebalance}
                     disabled={trades.length === 0 || rebalancing}
-                    className="flex-1 bg-blue-500 text-white py-3 rounded-lg text-sm font-bold hover:bg-blue-600 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   >
                     {rebalancing ? (
                       <span className="flex items-center justify-center gap-2">
@@ -1126,8 +1284,8 @@ export default function Dashboard() {
 
       {/* Footer */}
       <footer
-        className={`text-center py-5 text-[11px] border-t mt-auto ${
-          theme === "dark" ? "border-gray-800 text-gray-600" : "border-gray-200 text-gray-400"
+        className={`text-center py-6 text-[11px] border-t mt-auto ${
+          theme === "dark" ? "border-white/[0.06] text-gray-500" : "border-gray-200 text-gray-400"
         }`}
       >
         Built for{" "}
@@ -1135,7 +1293,7 @@ export default function Dashboard() {
           href="https://web3.okx.com/xlayer/build-x-hackathon"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-500 hover:underline font-medium"
+          className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent hover:underline font-semibold"
         >
           OKX Build X Hackathon
         </a>{" "}
@@ -1144,7 +1302,7 @@ export default function Dashboard() {
           href="https://web3.okx.com/onchainos"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-500 hover:underline font-medium"
+          className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent hover:underline font-semibold"
         >
           Onchain OS
         </a>
@@ -1356,17 +1514,18 @@ export default function Dashboard() {
       {/* Toast */}
       {toast && (
         <div
-          className={`fixed bottom-5 right-5 rounded-lg border px-4 py-3 text-xs flex items-center gap-2 shadow-lg z-50 animate-fade-in ${
+          className={`fixed bottom-5 right-5 rounded-xl border px-5 py-3.5 text-xs flex items-center gap-2.5 shadow-2xl z-50 animate-slide-toast glass ${
             toast.type === "ok"
               ? theme === "dark"
-                ? "bg-gray-900 border-green-500/30"
-                : "bg-white border-green-300"
+                ? "bg-[#030306]/90 border-green-500/30 shadow-green-500/10"
+                : "bg-white/90 border-green-300 shadow-green-100"
               : theme === "dark"
-                ? "bg-gray-900 border-red-500/30"
-                : "bg-white border-red-300"
+                ? "bg-[#030306]/90 border-red-500/30 shadow-red-500/10"
+                : "bg-white/90 border-red-300 shadow-red-100"
           }`}
         >
-          {toast.type === "ok" ? "✅" : "❌"} {toast.msg}
+          <span className="text-base">{toast.type === "ok" ? "✅" : "❌"}</span>
+          <span className="font-medium">{toast.msg}</span>
         </div>
       )}
     </div>
@@ -1389,8 +1548,8 @@ function MetricCard({
 }) {
   return (
     <div
-      className={`rounded-xl border p-4 transition hover:border-gray-600 ${
-        theme === "dark" ? "bg-gray-900/50 border-gray-800" : "bg-white border-gray-200"
+      className={`rounded-xl border p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg gradient-border-card ${
+        theme === "dark" ? "bg-white/[0.02] border-white/[0.06] hover:shadow-blue-500/5" : "bg-white border-gray-200 hover:shadow-blue-100"
       }`}
     >
       <div className="flex items-center justify-between mb-2">
