@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const AGENT_WALLET = process.env.AGENT_WALLET_ADDRESS || "";
+const AGENT_WALLET = (process.env.AGENT_WALLET_ADDRESS || "").trim();
 const XLAYER_RPC = "https://rpc.xlayer.tech";
 
 // Token addresses on X Layer

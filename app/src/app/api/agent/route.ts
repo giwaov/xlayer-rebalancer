@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 // The project's Agentic Wallet - onchain identity on X Layer
 // This wallet is created via: onchainos wallet login <email>
 // Private keys live in TEE - never exposed
-const AGENT_WALLET = process.env.AGENT_WALLET_ADDRESS || "0x0000000000000000000000000000000000000000";
+const AGENT_WALLET = (process.env.AGENT_WALLET_ADDRESS || "0x0000000000000000000000000000000000000000").trim();
 
 export async function GET() {
   return NextResponse.json({
