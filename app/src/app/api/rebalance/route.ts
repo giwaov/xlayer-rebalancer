@@ -5,7 +5,7 @@ import { OKXFacilitatorClient } from "@okxweb3/x402-core";
 import { ExactEvmScheme } from "@okxweb3/x402-evm/exact/server";
 
 // Agentic Wallet address - project's onchain identity on X Layer
-const AGENT_WALLET = process.env.AGENT_WALLET_ADDRESS || "0x0000000000000000000000000000000000000000";
+const AGENT_WALLET = (process.env.AGENT_WALLET_ADDRESS || "0x0000000000000000000000000000000000000000").trim();
 
 // OKX Facilitator config for x402 payments
 const facilitatorConfig = {
@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
   const paymentSig = req.headers.get("payment-signature");
   const server = await getX402Server();
 
-  // If x402 is configured and no payment provided, return 402
-  if (server && !paymentSig) {
+  // If no payment provided, return 402 Payment Required
+  if (!paymentSig) {
     return NextResponse.json(
       {
         x402Version: 1,
