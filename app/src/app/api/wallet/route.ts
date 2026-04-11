@@ -20,7 +20,8 @@ async function fetchTokenBalance(wallet: string, tokenAddr: string): Promise<str
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: tokenAddr, data }, "latest"] }),
   });
   const json = await res.json();
-  return json.result ? BigInt(json.result).toString() : "0";
+  if (!json.result || json.result === "0x" || json.result === "0x0") return "0";
+  return BigInt(json.result).toString();
 }
 
 // GET: Return agent wallet address + balances (RPC-based, works on Vercel)
