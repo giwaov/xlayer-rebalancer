@@ -1,182 +1,187 @@
-# XLayer Rebalancer
+# YieldPilot - Autonomous Portfolio Rebalancer on X Layer
 
-Autonomous portfolio rebalancing agent for X Layer (Chain ID 196).
-Built for the OKX Build X Hackathon - Season 2 (Apr 1-15, 2026).
+A retail-friendly autonomous portfolio rebalancer for X Layer (Chain ID 196) with x402 micropayments and Agentic Wallet integration.
+
+Built for the **OKX Build X Hackathon - Season 2** (Apr 1-15, 2026) | Arena: "I'm human"
 
 ## What It Does
 
-You set your ideal portfolio split (e.g., 60% OKB, 40% USDT). The agent
-watches your X Layer wallet and automatically swaps tokens to maintain your
-target allocation when drift exceeds a threshold.
+Connect your wallet, set your ideal portfolio split (e.g., 50% OKB, 30% USDT, 20% ETH), and YieldPilot watches your X Layer wallet in real-time. When token prices drift beyond your threshold, it rebalances automatically - one click or fully hands-free via x402 micropayments.
 
-Every cycle the agent:
-
-1. Checks all token balances via `onchainos wallet`
-2. Fetches live prices via `onchainos market`
-3. Computes current allocation vs target weights
-4. If any token drifts beyond the threshold:
-   - Runs security scans on buy-side tokens via `onchainos security`
-   - Calculates optimal swap amounts
-   - Executes swaps via `onchainos swap` (or quotes in paper mode)
-5. Logs the rebalance event and updates the dashboard
+No technical knowledge required. Just connect, set targets, and let the agent work.
 
 ## Features
 
-- **Paper-trade mode** (default) for risk-free testing
-- **Drift-based triggers** - only trades when allocations move beyond threshold
-- **Security scanning** before every buy-side swap
-- **Multi-token support** - rebalance across any number of X Layer tokens
-- **Web dashboard** at http://localhost:3197 with:
-  - Live allocation bar chart (current vs target)
-  - Pie chart visualization
-  - Drift indicators (green/amber/red)
-  - Full rebalance history
-- **Config hot-reload** - change targets without restarting
-- **Zero pip dependencies** - Python stdlib only
+- **One-click wallet connect** - MetaMask or OKX Wallet, auto-switches to X Layer
+- **Visual portfolio dashboard** - Donut chart, allocation bars, drift indicators
+- **3 preset strategies** - Conservative (70/20/10), Balanced (40/30/30), Growth (20/20/60)
+- **Drag-to-adjust sliders** - Set custom allocations with live preview
+- **Auto-rebalance** - x402 micropayment ($0.01/trigger) for hands-free operation
+- **Agentic Wallet** - TEE-protected agent identity on X Layer
+- **x402 payment protocol** - HTTP 402-based pay-per-call economy loop
+- **Dark/light theme** - Toggle with system preference detection
+- **Zero gas on X Layer** - USDT/USDG as gas tokens
+- **Rebalance history** - Full log of all trades with tx hashes
 
 ## Quick Start
 
 ```bash
-# 1. Install onchainos CLI
+# 1. Clone the repo
+git clone https://github.com/giwaov/xlayer-rebalancer.git
+cd xlayer-rebalancer/app
+
+# 2. Install dependencies
+npm install
+
+# 3. Set up environment
+cp .env.local.example .env.local
+# Edit .env.local with your OKX API keys and Agentic Wallet address
+
+# 4. Install & login to Agentic Wallet
 # Windows:
 irm https://raw.githubusercontent.com/okx/onchainos-skills/main/install.ps1 | iex
 # macOS/Linux:
 curl -sSL https://raw.githubusercontent.com/okx/onchainos-skills/main/install.sh | sh
 
-# 2. Login to Agentic Wallet
 onchainos wallet login your@email.com
+onchainos wallet addresses  # Get your X Layer address
 
-# 3. Find token addresses on X Layer
-onchainos token search --chain xlayer --query USDT
-onchainos token search --chain xlayer --query OKB
-
-# 4. Edit scripts/config.py with your desired allocation
-
-# 5. Run (paper mode by default)
-cd scripts
-python3 agent.py
+# 5. Run the dev server
+npm run dev
 ```
 
-Open http://localhost:3197 to view the dashboard.
-
-## Configuration
-
-All parameters live in `scripts/config.py` and support hot-reload.
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `DRY_RUN` | `True` | Paper mode (quote only), set `False` for live |
-| `DRIFT_THRESHOLD` | `5.0` | % drift from target that triggers rebalancing |
-| `CHECK_INTERVAL` | `300` | Seconds between portfolio checks |
-| `TARGET_PORTFOLIO` | 60/40 OKB/USDT | Dict of token address -> weight (must sum to 1.0) |
-| `MIN_SWAP_USD` | `1.0` | Skip swaps below this USD value |
-| `MAX_SWAP_AMOUNT_USD` | `50.0` | Cap on single swap value |
-| `MAX_REBALANCES` | `100` | Session limit on rebalance events |
-| `SLIPPAGE` | `0.5` | Max slippage % for live swaps |
-
-### Example: 3-Token Portfolio
-
-```python
-TARGET_PORTFOLIO = {
-    "0xe538905cf8410324e03a5a23c1c177a474d59b2b": 0.50,   # OKB
-    "0x779ded0c9e1022225f8e0630b35a9b54be713736": 0.30,   # USDT
-    "0x5a77f1443d16ee5761d310e38b7446e3b8b19a5e": 0.20,   # ETH
-}
-```
+Open http://localhost:3000 to use the dashboard.
 
 ## Architecture
 
 ```
-+-----------------------+
-|    config.py          |   User sets target allocations
-|  TARGET_PORTFOLIO     |   and risk parameters
-+-----------+-----------+
-            |
-            v
-+-----------+-----------+
-|    Rebalance Cycle     |
-|                        |
-|  1. wallet balance     |----> onchainos wallet balance --chain 196
-|  2. market prices      |----> onchainos market prices --tokens 196:addr
-|  3. compute drift      |----> portfolio math (current % vs target %)
-|  4. plan trades        |----> pair overweight sells with underweight buys
-|  5. security scan      |----> onchainos security token-scan --chain xlayer
-|  6. execute swaps      |----> onchainos swap quote/swap --chain xlayer
-|                        |
-+-----------+------------+
-            |
-            v
-+-----------+------------+
-|   Web Dashboard        |   http://localhost:3197
-|   - Allocation bars    |
-|   - Pie chart          |
-|   - Drift indicators   |
-|   - Rebalance history  |
-+------------------------+
-
-Data persistence:
-  events.json     -> trade history
-  state.json      -> session counters
-  snapshots.json  -> portfolio snapshots over time
++-------------------+     +-------------------+     +-------------------+
+|   User's Wallet   |     |   YieldPilot UI    |     |  Agentic Wallet   |
+|   (MetaMask/OKX)  |     |   (Next.js App)    |     |  (onchainos CLI)  |
++--------+----------+     +--------+----------+     +--------+----------+
+         |                         |                          |
+         | connect                 | fetch prices             | TEE-protected
+         v                         v                          | agent identity
++--------+-------------------------+----------+               |
+|              Frontend Dashboard              |               |
+|  - Donut chart  - Sliders  - Strategies     |               |
+|  - Drift bars   - Auto toggle  - History    |               |
++--------+-------------------------+----------+               |
+         |                         |                          |
+         | sign txs                | API calls                |
+         v                         v                          v
++--------+----------+     +--------+----------+     +--------+----------+
+|  /api/swap        |     |  /api/prices      |     |  /api/rebalance   |
+|  OKX DEX          |     |  OKX DEX + CG     |     |  x402 gated       |
+|  Aggregator       |     |  price feeds       |     |  auto-rebalance   |
++-------------------+     +-------------------+     +-------------------+
+                                                             |
+                                                    HTTP 402 Payment
+                                                    Required flow
+                                                             |
+                                                    +--------+----------+
+                                                    |  /api/agent       |
+                                                    |  Wallet info &    |
+                                                    |  economy loop     |
+                                                    +-------------------+
 ```
+
+### File Structure
+
+```
+app/
+  src/
+    components/
+      Dashboard.tsx       # Main UI - wallet connect, charts, sliders, x402 modal
+    lib/
+      constants.ts        # Token addresses, presets, colors
+      types.ts            # TypeScript interfaces
+      rebalancer.ts       # Portfolio math - drift, trade planning, execution
+    app/
+      page.tsx            # Entry point
+      layout.tsx          # Metadata & fonts
+      api/
+        prices/route.ts   # Token price fetching (OKX DEX -> CoinGecko fallback)
+        swap/route.ts     # DEX swap execution via OKX Aggregator
+        rebalance/route.ts # x402-gated auto-rebalance endpoint
+        agent/route.ts    # Agentic Wallet info & economy loop
+```
+
+## x402 Payment Integration
+
+YieldPilot uses the [x402 protocol](https://www.x402.org/) for its auto-rebalance feature:
+
+1. User enables "Auto" mode in the dashboard
+2. Frontend calls `POST /api/rebalance` every 60 seconds
+3. Server responds with HTTP 402 + payment requirements (ExactEvmScheme on eip155:196)
+4. Client signs a $0.01 USDT micropayment via the x402 SDK
+5. Server verifies payment, triggers rebalance, returns result
+6. Agent earns USDT, pays OnchainOS API fees, executes swaps on X Layer
+
+This creates a self-sustaining economy loop where the agent funds its own operations through user micropayments.
+
+**Packages used:**
+- `@okxweb3/x402-core` - Payment scheme types and verification
+- `@okxweb3/x402-evm` - EVM-specific x402 facilitator client
 
 ## OnchainOS / Uniswap Skill Usage
 
-| Skill | Module | How It's Used |
-|-------|--------|---------------|
-| `okx-agentic-wallet` | Wallet API | Authenticate, get addresses, check balances |
-| `okx-dex-swap` | Trade API | Get swap quotes and execute live swaps |
-| `okx-dex-market` | Market API | Fetch real-time token prices |
-| `okx-security` | Security API | Scan tokens for honeypots/rug-pulls before buying |
-| `okx-dex-token` | Token API | Search and discover tokens on X Layer |
-| Uniswap Skills | Swap Planning | Swap route optimization via OnchainOS DEX aggregator (routes through Uniswap V3 pools on X Layer when available) |
+| Skill | How It's Used |
+|-------|---------------|
+| `okx-agentic-wallet` | Agent identity on X Layer, TEE-protected key management |
+| `okx-dex-swap` | DEX aggregation, swap quotes and execution |
+| `okx-dex-market` | Real-time token price feeds for portfolio valuation |
+| `okx-security` | Token security scanning (honeypot/rug-pull detection) |
+| `okx-dex-token` | Token discovery and metadata on X Layer |
+| Uniswap Skills | Swap route optimization via Uniswap V3 pools on X Layer |
 
 ## Working Mechanics
 
-### Drift Detection
+### How Drift Detection Works
 
-The agent computes each token's current allocation as a percentage of total
-portfolio value, then compares it to the target weight. If any token's drift
-exceeds `DRIFT_THRESHOLD`, a rebalance is triggered.
+Each token's current allocation is computed as a percentage of total portfolio value, then compared to the user's target weight:
 
 ```
-drift = current_pct - target_pct
-if abs(drift) >= DRIFT_THRESHOLD:
+drift = |current_pct - target_pct|
+if drift >= threshold (default 5%):
     trigger rebalance
 ```
 
 ### Trade Planning
 
-Overweight tokens (positive drift) are paired with underweight tokens
-(negative drift). The agent calculates the USD amount to swap from each
-overweight token to each underweight token to bring allocations back to target.
+Overweight tokens (positive drift) are paired with underweight tokens (negative drift). The agent calculates the USD amount to swap from each overweight token to each underweight token using a greedy pairing algorithm.
 
-### Safety Checks
+### Safety
 
-Before executing any swap:
-1. Token security scan (honeypot, rug-pull detection)
-2. Risk level assessment (rejects high/critical/scam)
-3. Max swap amount cap
-4. Session rebalance limit
+- Token security scan before every buy-side swap
+- Max swap amount caps
+- Slippage protection via OKX DEX Aggregator
+- User signs every transaction (non-custodial)
 
 ## Deployment Address
 
-The agent's Agentic Wallet address on X Layer is displayed at startup:
-```
-[2026-04-08 12:00:00 UTC] Wallet: 0x...your-xlayer-address...
-```
+**Agentic Wallet (X Layer):** `0xf2ee7190e35c269408643dcc3d8f4ba82857730a`
 
-Fund this address with the tokens in your `TARGET_PORTFOLIO` to begin.
+Fund the wallet with tokens to enable the agent's auto-rebalance service.
 
-## Project Positioning in X Layer Ecosystem
+## X Layer Ecosystem Positioning
 
-XLayer Rebalancer brings traditional portfolio management to X Layer's DeFi
-ecosystem. It:
+YieldPilot brings automated portfolio management to X Layer's DeFi ecosystem:
 
-- **Increases X Layer DEX activity** through automated, legitimate swap transactions
-- **Demonstrates OnchainOS skill composability** by chaining 5+ skills in a single workflow
-- **Lowers the barrier** for users to maintain diversified positions on X Layer
-- **Promotes token liquidity** across X Layer's growing token ecosystem
+- **Increases X Layer DEX volume** through regular, automated swap transactions
+- **Demonstrates OnchainOS composability** - chains 6+ skills in one workflow
+- **Lowers the barrier** for retail users to maintain diversified DeFi positions
+- **Showcases x402** as a viable micropayment model for agent services
+- **Zero gas costs** - leverages X Layer's USDT/USDG gas model
+
+## Tech Stack
+
+- **Frontend:** Next.js 16, React, TypeScript, Tailwind CSS
+- **Chain:** X Layer (Chain ID 196)
+- **DEX:** OKX DEX Aggregator API
+- **Payments:** x402 protocol (@okxweb3/x402-core, @okxweb3/x402-evm)
+- **Agent:** OnchainOS Agentic Wallet (onchainos CLI)
+- **Wallets:** MetaMask, OKX Wallet (EIP-1193)
 
 ## Team
 
