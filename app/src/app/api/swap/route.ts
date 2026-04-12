@@ -82,7 +82,7 @@ function getTokenInfo(addr: string): { decimals: number; symbol: string } {
   const map: Record<string, { decimals: number; symbol: string }> = {
     "0xe538905cf8410324e03a5a23c1c177a474d59b2b": { decimals: 18, symbol: "OKB" },
     "0x779ded0c9e1022225f8e0630b35a9b54be713736": { decimals: 6, symbol: "USDT" },
-    "0x5a77f1443d16ee5761d310e38b7446e3b8b19a5e": { decimals: 18, symbol: "ETH" },
+    "0x5a77f1443d16ee5761d310e38b62f77f726bc71c": { decimals: 18, symbol: "ETH" },
   };
   return map[addr.toLowerCase()] || { decimals: 18, symbol: "UNKNOWN" };
 }
