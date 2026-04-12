@@ -1,7 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 
-const OKX_BASE = "https://www.okx.com/api/v5/dex/aggregator";
+const OKX_BASE = "https://www.okx.com";
+const DEX_PATH = "/api/v5/dex/aggregator";
 const CHAIN_ID = "196";
+
+/** Build OKX API auth headers (HMAC-SHA256 signed) */
+function okxHeaders(method: string, requestPath: string, body?: string) {
+  const timestamp = new Date().toISOString();
+  const prehash = timestamp + method + requestPath + (body ?? "");
+  const sign = crypto
+    .createHmac("sha256", process.env.OKX_SECRET_KEY || "")
+    .update(prehash)
+    .digest("base64");
+  return {
+    "OK-ACCESS-KEY": process.env.OKX_API_KEY || "",
+    "OK-ACCESS-SIGN": sign,
+    "OK-ACCESS-TIMESTAMP": timestamp,
+    "OK-ACCESS-PASSPHRASE": process.env.OKX_PASSPHRASE || "",
+    "Content-Type": "application/json",
+  };
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,18 +47,18 @@ export async function POST(req: NextRequest) {
     const rawAmount = BigInt(Math.floor(tokenAmount * 10 ** tokenInfo.decimals)).toString();
 
     // Step 2: Get swap quote from OKX
-    const quoteUrl = `${OKX_BASE}/quote?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5`;
+    const quotePath = `${DEX_PATH}/quote?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5`;
 
-    const quoteRes = await fetch(quoteUrl, {
-      headers: {
-        "Ok-Access-Key": process.env.OKX_API_KEY || "",
-      },
+    const quoteRes = await fetch(`${OKX_BASE}${quotePath}`, {
+      headers: okxHeaders("GET", quotePath),
       signal: AbortSignal.timeout(15000),
     });
 
     if (!quoteRes.ok) {
+      const errText = await quoteRes.text();
+      console.error("[swap] quote failed:", quoteRes.status, errText);
       return NextResponse.json(
-        { error: "Failed to get swap quote", details: await quoteRes.text() },
+        { error: "Failed to get swap quote", details: errText },
         { status: 502 }
       );
     }
@@ -47,18 +66,18 @@ export async function POST(req: NextRequest) {
     const quoteData = await quoteRes.json();
 
     // Step 3: Get swap transaction data
-    const swapUrl = `${OKX_BASE}/swap?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5&userWalletAddress=${userAddress}`;
+    const swapPath = `${DEX_PATH}/swap?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5&userWalletAddress=${userAddress}`;
 
-    const swapRes = await fetch(swapUrl, {
-      headers: {
-        "Ok-Access-Key": process.env.OKX_API_KEY || "",
-      },
+    const swapRes = await fetch(`${OKX_BASE}${swapPath}`, {
+      headers: okxHeaders("GET", swapPath),
       signal: AbortSignal.timeout(15000),
     });
 
     if (!swapRes.ok) {
-      // Return quote data so frontend can show what would happen
+      const errText = await swapRes.text();
+      console.error("[swap] swap tx failed:", swapRes.status, errText);
       return NextResponse.json({
+        error: "Swap tx build failed",
         mode: "quote",
         quote: quoteData?.data?.[0] || null,
         fromAmount: rawAmount,
@@ -74,6 +93,7 @@ export async function POST(req: NextRequest) {
       quote: quoteData?.data?.[0] || null,
     });
   } catch (err: any) {
+    console.error("[swap] error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

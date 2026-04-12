@@ -367,6 +367,10 @@ export default function Dashboard() {
 
         const data = await res.json();
 
+        if (!res.ok || data.error) {
+          throw new Error(data.error || `Swap API returned ${res.status}`);
+        }
+
         if (data.tx) {
           updatedTrades[i] = { ...updatedTrades[i], status: "executing" };
           setTrades([...updatedTrades]);
@@ -388,7 +392,7 @@ export default function Dashboard() {
 
           updatedTrades[i] = { ...updatedTrades[i], status: "done", txHash };
         } else {
-          updatedTrades[i] = { ...updatedTrades[i], status: "done" };
+          updatedTrades[i] = { ...updatedTrades[i], status: "failed", error: "No swap tx returned (quote only)" };
         }
       } catch (err: any) {
         updatedTrades[i] = {
@@ -412,7 +416,15 @@ export default function Dashboard() {
     ]);
 
     setRebalancing(false);
-    setToast({ msg: "Rebalance complete!", type: "ok" });
+    const doneCount = updatedTrades.filter((t) => t.status === "done").length;
+    const failedCount = updatedTrades.filter((t) => t.status === "failed").length;
+    if (failedCount > 0 && doneCount === 0) {
+      setToast({ msg: `Rebalance failed: ${updatedTrades.find(t => t.status === "failed")?.error || "swap error"}`, type: "err" });
+    } else if (failedCount > 0) {
+      setToast({ msg: `Rebalance partial: ${doneCount} done, ${failedCount} failed`, type: "err" });
+    } else {
+      setToast({ msg: "Rebalance complete!", type: "ok" });
+    }
     setTimeout(refreshPortfolio, 3000);
   };
 
