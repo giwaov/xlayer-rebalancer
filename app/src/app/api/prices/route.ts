@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getOkxHeaders } from "../../../lib/okx-auth";
 
-const OKX_BASE = "https://www.okx.com/api/v5/dex/aggregator";
+const OKX_BASE = "https://www.okx.com";
+const DEX_PATH = "/api/v5/dex/aggregator";
 const CHAIN_ID = "196"; // X Layer
 
 const TOKEN_ADDRESSES = {
@@ -62,9 +64,9 @@ async function fetchPrice(addr: string): Promise<number> {
   try {
     const info = getTokenInfo(lc);
     const amount = (10 ** info.decimals).toString();
-    const quoteUrl = `${OKX_BASE}/quote?chainId=${CHAIN_ID}&fromTokenAddress=${lc}&toTokenAddress=${TOKEN_ADDRESSES.usdt}&amount=${amount}`;
-    const res = await fetch(quoteUrl, {
-      headers: { "Ok-Access-Key": process.env.OKX_API_KEY || "" },
+    const quoteQS = `?chainId=${CHAIN_ID}&fromTokenAddress=${lc}&toTokenAddress=${TOKEN_ADDRESSES.usdt}&amount=${amount}`;
+    const res = await fetch(`${OKX_BASE}${DEX_PATH}/quote${quoteQS}`, {
+      headers: getOkxHeaders("GET", `${DEX_PATH}/quote`, quoteQS),
       signal: AbortSignal.timeout(10000),
     });
     if (res.ok) {

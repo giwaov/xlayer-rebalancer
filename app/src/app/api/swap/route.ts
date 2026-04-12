@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getOkxHeaders } from "../../../lib/okx-auth";
 
-const OKX_BASE = "https://www.okx.com/api/v5/dex/aggregator";
+const OKX_BASE = "https://www.okx.com";
+const DEX_PATH = "/api/v5/dex/aggregator";
 const CHAIN_ID = "196";
-
-/** Simple OKX DEX API headers (same as prices route) */
-function okxHeaders() {
-  return {
-    "Ok-Access-Key": process.env.OKX_API_KEY || "",
-  };
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,11 +30,9 @@ export async function POST(req: NextRequest) {
     const rawAmount = BigInt(Math.floor(tokenAmount * 10 ** tokenInfo.decimals)).toString();
 
     // Step 1: Get swap quote from OKX DEX
-    const quoteUrl = `${OKX_BASE}/quote?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5`;
-    console.log("[swap] quote URL:", quoteUrl);
-
-    const quoteRes = await fetch(quoteUrl, {
-      headers: okxHeaders(),
+    const quoteQS = `?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5`;
+    const quoteRes = await fetch(`${OKX_BASE}${DEX_PATH}/quote${quoteQS}`, {
+      headers: getOkxHeaders("GET", `${DEX_PATH}/quote`, quoteQS),
       signal: AbortSignal.timeout(15000),
     });
 
@@ -63,11 +56,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 2: Get swap transaction data
-    const swapUrl = `${OKX_BASE}/swap?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5&userWalletAddress=${userAddress}`;
-    console.log("[swap] swap URL:", swapUrl);
-
-    const swapRes = await fetch(swapUrl, {
-      headers: okxHeaders(),
+    const swapQS = `?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5&userWalletAddress=${userAddress}`;
+    const swapRes = await fetch(`${OKX_BASE}${DEX_PATH}/swap${swapQS}`, {
+      headers: getOkxHeaders("GET", `${DEX_PATH}/swap`, swapQS),
       signal: AbortSignal.timeout(15000),
     });
 
