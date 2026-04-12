@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOkxHeaders } from "../../../lib/okx-auth";
 
-const OKX_BASE = "https://www.okx.com";
+const OKX_BASE = "https://web3.okx.com";
 const DEX_PATH = "/api/v5/dex/aggregator";
 const CHAIN_ID = "196";
 
