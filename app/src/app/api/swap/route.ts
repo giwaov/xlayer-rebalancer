@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOkxHeaders } from "../../../lib/okx-auth";
 
 const OKX_BASE = "https://web3.okx.com";
-const DEX_PATH = "/api/v5/dex/aggregator";
-const CHAIN_ID = "196";
+const DEX_PATH = "/api/v6/dex/aggregator";
+const CHAIN_INDEX = "196";
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     const rawAmount = BigInt(Math.floor(tokenAmount * 10 ** tokenInfo.decimals)).toString();
 
     // Step 1: Get swap quote from OKX DEX
-    const quoteQS = `?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5`;
+    const quoteQS = `?chainIndex=${CHAIN_INDEX}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5`;
     const quoteRes = await fetch(`${OKX_BASE}${DEX_PATH}/quote${quoteQS}`, {
       headers: getOkxHeaders("GET", `${DEX_PATH}/quote`, quoteQS),
       signal: AbortSignal.timeout(15000),
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 2: Get swap transaction data
-    const swapQS = `?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5&userWalletAddress=${userAddress}`;
+    const swapQS = `?chainIndex=${CHAIN_INDEX}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5&userWalletAddress=${userAddress}`;
     const swapRes = await fetch(`${OKX_BASE}${DEX_PATH}/swap${swapQS}`, {
       headers: getOkxHeaders("GET", `${DEX_PATH}/swap`, swapQS),
       signal: AbortSignal.timeout(15000),
