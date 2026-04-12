@@ -1,23 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
 
-const OKX_BASE = "https://www.okx.com";
-const DEX_PATH = "/api/v5/dex/aggregator";
+const OKX_BASE = "https://www.okx.com/api/v5/dex/aggregator";
 const CHAIN_ID = "196";
 
-/** Build OKX API auth headers (HMAC-SHA256 signed) */
-function okxHeaders(method: string, requestPath: string, body?: string) {
-  const timestamp = new Date().toISOString();
-  const prehash = timestamp + method + requestPath + (body ?? "");
-  const sign = crypto
-    .createHmac("sha256", process.env.OKX_SECRET_KEY || "")
-    .update(prehash)
-    .digest("base64");
+/** Simple OKX DEX API headers (same as prices route) */
+function okxHeaders() {
   return {
-    "OK-ACCESS-KEY": process.env.OKX_API_KEY || "",
-    "OK-ACCESS-SIGN": sign,
-    "OK-ACCESS-TIMESTAMP": timestamp,
-    "OK-ACCESS-PASSPHRASE": process.env.OKX_PASSPHRASE || "",
+    "Ok-Access-Key": process.env.OKX_API_KEY || "",
     "Content-Type": "application/json",
   };
 }
@@ -30,9 +19,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Step 1: Get a quote from OKX DEX aggregator
     const tokenInfo = getTokenInfo(fromToken);
-    // Convert USD amount to token amount (approximate)
+
+    // Get price to convert USD amount to token amount
     const priceRes = await fetch(
       `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/prices`,
       {
@@ -46,11 +35,12 @@ export async function POST(req: NextRequest) {
     const tokenAmount = amountUsd / price;
     const rawAmount = BigInt(Math.floor(tokenAmount * 10 ** tokenInfo.decimals)).toString();
 
-    // Step 2: Get swap quote from OKX
-    const quotePath = `${DEX_PATH}/quote?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5`;
+    // Step 1: Get swap quote from OKX DEX
+    const quoteUrl = `${OKX_BASE}/quote?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5`;
+    console.log("[swap] quote URL:", quoteUrl);
 
-    const quoteRes = await fetch(`${OKX_BASE}${quotePath}`, {
-      headers: okxHeaders("GET", quotePath),
+    const quoteRes = await fetch(quoteUrl, {
+      headers: okxHeaders(),
       signal: AbortSignal.timeout(15000),
     });
 
@@ -64,20 +54,30 @@ export async function POST(req: NextRequest) {
     }
 
     const quoteData = await quoteRes.json();
+    console.log("[swap] quote response code:", quoteData?.code, "msg:", quoteData?.msg);
 
-    // Step 3: Get swap transaction data
-    const swapPath = `${DEX_PATH}/swap?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5&userWalletAddress=${userAddress}`;
+    if (quoteData?.code !== "0") {
+      return NextResponse.json(
+        { error: `Quote error: ${quoteData?.msg || "unknown"}`, code: quoteData?.code },
+        { status: 502 }
+      );
+    }
 
-    const swapRes = await fetch(`${OKX_BASE}${swapPath}`, {
-      headers: okxHeaders("GET", swapPath),
+    // Step 2: Get swap transaction data
+    const swapUrl = `${OKX_BASE}/swap?chainId=${CHAIN_ID}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5&userWalletAddress=${userAddress}`;
+    console.log("[swap] swap URL:", swapUrl);
+
+    const swapRes = await fetch(swapUrl, {
+      headers: okxHeaders(),
       signal: AbortSignal.timeout(15000),
     });
 
-    if (!swapRes.ok) {
-      const errText = await swapRes.text();
-      console.error("[swap] swap tx failed:", swapRes.status, errText);
+    const swapData = await swapRes.json();
+    console.log("[swap] swap response code:", swapData?.code, "msg:", swapData?.msg);
+
+    if (!swapRes.ok || swapData?.code !== "0") {
       return NextResponse.json({
-        error: "Swap tx build failed",
+        error: `Swap build failed: ${swapData?.msg || swapRes.status}`,
         mode: "quote",
         quote: quoteData?.data?.[0] || null,
         fromAmount: rawAmount,
@@ -85,11 +85,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const swapData = await swapRes.json();
+    const tx = swapData?.data?.[0]?.tx;
+    if (!tx) {
+      return NextResponse.json({
+        error: "No tx data in swap response",
+        mode: "quote",
+        quote: quoteData?.data?.[0] || null,
+      });
+    }
 
     return NextResponse.json({
       mode: "swap",
-      tx: swapData?.data?.[0]?.tx || null,
+      tx,
       quote: quoteData?.data?.[0] || null,
     });
   } catch (err: any) {
