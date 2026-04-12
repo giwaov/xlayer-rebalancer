@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 2: Get swap transaction data
-    const swapQS = `?chainIndex=${CHAIN_INDEX}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippage=0.5&userWalletAddress=${userAddress}`;
+    const swapQS = `?chainIndex=${CHAIN_INDEX}&fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${rawAmount}&slippagePercent=0.5&userWalletAddress=${userAddress}`;
     const swapRes = await fetch(`${OKX_BASE}${DEX_PATH}/swap${swapQS}`, {
       headers: getOkxHeaders("GET", `${DEX_PATH}/swap`, swapQS),
       signal: AbortSignal.timeout(15000),
