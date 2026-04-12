@@ -135,7 +135,21 @@ export default function Dashboard() {
             method: "eth_call",
             params: [{ to: addr, data }, "latest"],
           });
-          balances[addr] = BigInt(result).toString();
+          let bal = BigInt(result);
+
+          // OKB is the native gas token on X Layer; the ERC-20 contract is WOKB.
+          // Add native OKB balance so users see their full OKB holdings.
+          if (addr.toLowerCase() === "0xe538905cf8410324e03a5a23c1c177a474d59b2b") {
+            try {
+              const nativeBal = await provider.request({
+                method: "eth_getBalance",
+                params: [account, "latest"],
+              });
+              bal += BigInt(nativeBal);
+            } catch {}
+          }
+
+          balances[addr] = bal.toString();
         } catch {
           balances[addr] = "0";
         }

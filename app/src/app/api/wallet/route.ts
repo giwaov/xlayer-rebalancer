@@ -40,9 +40,25 @@ export async function GET() {
       entries.map(([, t]) => fetchTokenBalance(AGENT_WALLET, t.address))
     );
 
+    // Also fetch native OKB balance (OKB is the gas token on X Layer)
+    let nativeOkb = BigInt(0);
+    try {
+      const res = await fetch(XLAYER_RPC, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getBalance", params: [AGENT_WALLET, "latest"] }),
+      });
+      const json = await res.json();
+      if (json.result && json.result !== "0x" && json.result !== "0x0") {
+        nativeOkb = BigInt(json.result);
+      }
+    } catch {}
+
     entries.forEach(([sym, t], i) => {
-      const raw = results[i];
-      const human = Number(BigInt(raw)) / 10 ** t.decimals;
+      let rawBi = BigInt(results[i]);
+      // Add native OKB to WOKB balance
+      if (sym === "OKB") rawBi += nativeOkb;
+      const human = Number(rawBi) / 10 ** t.decimals;
       balances[sym] = human.toFixed(6);
       // Simple estimate: USDT = $1, OKB ~ $50, ETH ~ $2500
       const priceEst = sym === "USDT" ? 1 : sym === "OKB" ? 50 : 2500;
