@@ -15,10 +15,10 @@ export const TOKENS: Record<string, { symbol: string; decimals: number; address:
     decimals: 6,
     address: "0x779ded0c9e1022225f8e0630b35a9b54be713736",
   },
-  "0x5a77f1443d16ee5761d310e38b7446e3b8b19a5e": {
+  "0x5a77f1443d16ee5761d310e38b62f77f726bc71c": {
     symbol: "ETH",
     decimals: 18,
-    address: "0x5a77f1443d16ee5761d310e38b7446e3b8b19a5e",
+    address: "0x5a77f1443d16ee5761d310e38b62f77f726bc71c",
   },
 };
 

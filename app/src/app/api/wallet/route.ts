@@ -5,7 +5,7 @@ const XLAYER_RPC = "https://rpc.xlayer.tech";
 
 // Token addresses on X Layer
 const WALLET_TOKENS: Record<string, { symbol: string; decimals: number; address: string }> = {
-  USDT: { symbol: "USDT", decimals: 18, address: "0x779dB6E1f0C088D3A18c0e42223672e5FCf38e2C" },
+  USDT: { symbol: "USDT", decimals: 6,  address: "0x779ded0c9e1022225f8e0630b35a9b54be713736" },
   OKB:  { symbol: "OKB",  decimals: 18, address: "0xe538905cf8410324e03a5a23c1c177a474d59b2b" },
   ETH:  { symbol: "ETH",  decimals: 18, address: "0x5A77f1443D16ee5761d310e38b62f77f726bC71c" },
 };
