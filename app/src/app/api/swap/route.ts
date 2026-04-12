@@ -7,7 +7,6 @@ const CHAIN_ID = "196";
 function okxHeaders() {
   return {
     "Ok-Access-Key": process.env.OKX_API_KEY || "",
-    "Content-Type": "application/json",
   };
 }
 

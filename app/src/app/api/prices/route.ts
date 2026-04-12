@@ -69,11 +69,16 @@ async function fetchPrice(addr: string): Promise<number> {
     });
     if (res.ok) {
       const data = await res.json();
-      if (data?.data?.[0]?.toTokenAmount) {
+      console.log("[prices] OKX quote response for", lc.slice(0,10), "code:", data?.code, "msg:", data?.msg);
+      if (data?.code === "0" && data?.data?.[0]?.toTokenAmount) {
         return Number(data.data[0].toTokenAmount) / 10 ** 6;
       }
+    } else {
+      console.error("[prices] OKX quote HTTP", res.status, await res.text().catch(() => ""));
     }
-  } catch {}
+  } catch (e: any) {
+    console.error("[prices] OKX quote error:", e.message);
+  }
 
   try {
     const cgRes = await fetch(
